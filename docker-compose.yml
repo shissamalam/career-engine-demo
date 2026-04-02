@@ -1,0 +1,17 @@
+services:
+  career-engine:
+    build: .
+    container_name: career-engine
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - ./dna.txt:/app/dna.txt
+    restart: unless-stopped
+    networks:
+      - career-net
+
+networks:
+  career-net:
+    driver: bridge
+    name: career-net
