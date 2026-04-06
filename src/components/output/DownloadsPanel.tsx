@@ -8,6 +8,10 @@ interface DownloadsPanelProps {
   companyName?: string
   isLiveMode?: boolean
   liveToken?: string
+  jobPosting?: string
+  roleFit?: object
+  talkingPoints?: object[]
+  salaryBrief?: object
 }
 
 function DocCard({
@@ -91,9 +95,53 @@ export default function DownloadsPanel({
   companyName,
   isLiveMode,
   liveToken,
+  jobPosting,
+  roleFit,
+  talkingPoints,
+  salaryBrief,
 }: DownloadsPanelProps) {
   const [downloadingResume, setDownloadingResume] = useState(false)
   const [downloadingCover, setDownloadingCover] = useState(false)
+  const [downloadingPackage, setDownloadingPackage] = useState(false)
+
+  async function downloadPackage() {
+    setDownloadingPackage(true)
+    try {
+      const token = liveToken || ''
+      const res = await fetch('/api/download/package', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Live-Token': token,
+        },
+        body: JSON.stringify({
+          jobPosting: jobPosting || '',
+          companyName: companyName || 'company',
+          roleFit,
+          talkingPoints,
+          salaryBrief,
+          resume: resumeData,
+          coverLetter: coverLetterData,
+        }),
+      })
+      if (!res.ok) throw new Error('Package download failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `sam-manning-${(companyName || 'company')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')}-package.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setDownloadingPackage(false)
+    }
+  }
 
   async function downloadResume() {
     if (!resumeData) return
@@ -157,9 +205,55 @@ export default function DownloadsPanel({
       </div>
       <p style={{ fontSize: '14px', color: '#8A8784', lineHeight: '1.6', marginBottom: '28px', maxWidth: '560px' }}>
         {isLiveMode
-          ? 'Download your tailored resume and cover letter as formatted .docx files, ready for submission.'
+          ? 'Download the complete package or individual documents below.'
           : 'In the full Career Engine, this tab generates a one-page tailored resume and cover letter as downloadable .docx files, formatted for ATS systems and human readers.'}
       </p>
+
+      {isLiveMode && (
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{
+            fontSize: '11px',
+            fontFamily: 'IBM Plex Mono, monospace',
+            color: '#C8843A',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            marginBottom: '8px',
+          }}>
+            Complete package
+          </div>
+          <p style={{
+            fontSize: '13px',
+            color: '#8A8784',
+            lineHeight: '1.6',
+            marginBottom: '16px',
+            maxWidth: '480px',
+          }}>
+            Downloads a zip file containing all 6 documents: job
+            description, role fit report, salary brief, interview
+            prep, resume, and cover letter.
+          </p>
+          <button
+            onClick={downloadPackage}
+            disabled={downloadingPackage}
+            style={{
+              fontSize: '14px',
+              fontFamily: 'IBM Plex Mono, monospace',
+              background: downloadingPackage ? '#2A2A2A' : '#C8843A',
+              color: downloadingPackage ? '#4A4846' : '#0F0F0F',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '14px 28px',
+              cursor: downloadingPackage ? 'not-allowed' : 'pointer',
+              fontWeight: '500',
+              transition: 'background 0.2s, color 0.2s',
+              width: '100%',
+              maxWidth: '380px',
+            }}
+          >
+            {downloadingPackage ? 'Generating package...' : 'Download complete package .zip'}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '32px' }}>
         <DocCard

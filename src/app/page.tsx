@@ -368,6 +368,7 @@ export default function Home() {
               resumeData={result.resume}
               coverLetterData={result.coverLetter}
               companyName={extractCompanyName(jobPosting)}
+              jobPosting={jobPosting}
             />
           </div>
         )}

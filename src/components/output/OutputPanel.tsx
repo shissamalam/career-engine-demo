@@ -23,6 +23,7 @@ interface OutputPanelProps {
   resumeData?: object
   coverLetterData?: object
   companyName?: string
+  jobPosting?: string
 }
 
 export default function OutputPanel({
@@ -32,6 +33,7 @@ export default function OutputPanel({
   resumeData,
   coverLetterData,
   companyName,
+  jobPosting,
 }: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('rolefit')
 
@@ -82,6 +84,10 @@ export default function OutputPanel({
           resumeData={resumeData}
           coverLetterData={coverLetterData}
           companyName={companyName}
+          jobPosting={jobPosting}
+          roleFit={data.roleFit}
+          talkingPoints={data.talkingPoints}
+          salaryBrief={data.salaryBrief}
         />
       )}
     </div>
