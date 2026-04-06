@@ -7,13 +7,9 @@ const client = new Anthropic({
 
 export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json(
-      { error: 'API key not configured' },
-      { status: 503 }
-    )
+    return Response.json({ error: 'API key not configured' }, { status: 503 })
   }
 
-  // Verify live mode token
   const token = request.headers.get('X-Live-Token')
   if (token !== process.env.LIVE_MODE_TOKEN) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -60,7 +56,7 @@ Return a JSON object with exactly this structure:
   }
 }
 
-Return only valid JSON. No markdown, no preamble.`,
+Return only valid JSON. No markdown fences, no preamble, no explanation.`,
         },
       ],
     })
@@ -70,7 +66,14 @@ Return only valid JSON. No markdown, no preamble.`,
       throw new Error('Unexpected response type')
     }
 
-    const parsed = JSON.parse(content.text)
+    // Strip markdown fences if present
+    const cleaned = content.text
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim()
+
+    const parsed = JSON.parse(cleaned)
 
     return Response.json({
       success: true,
@@ -79,8 +82,9 @@ Return only valid JSON. No markdown, no preamble.`,
     })
   } catch (error) {
     console.error('Live generation error:', error)
+    // Return the actual error message so we can debug
     return Response.json(
-      { error: 'Generation failed' },
+      { error: 'Generation failed', detail: String(error) },
       { status: 500 }
     )
   }
