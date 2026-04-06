@@ -7,11 +7,27 @@ import { DEMO_JOB_POSTING, DEMO_OUTPUT } from '@/lib/demoContent'
 
 type LoadingPhase = null | 'analyzing' | 'building'
 
+type LiveResult = typeof DEMO_OUTPUT & {
+  resume?: object
+  coverLetter?: object
+}
+
+function extractCompanyName(posting: string): string {
+  const lines = posting.split('\n').slice(0, 5)
+  for (const line of lines) {
+    const dashMatch = line.match(/^(.+?)\s+[—–-]{1,2}\s+/)
+    if (dashMatch) return dashMatch[1].trim()
+    const atMatch = line.match(/\bat\s+([A-Z][^\n,]+)/i)
+    if (atMatch) return atMatch[1].trim()
+  }
+  return lines[0]?.trim() || ''
+}
+
 export default function Home() {
   const [jobPosting, setJobPosting] = useState(DEMO_JOB_POSTING)
   const [loading, setLoading] = useState(false)
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>(null)
-  const [result, setResult] = useState<typeof DEMO_OUTPUT | null>(null)
+  const [result, setResult] = useState<LiveResult | null>(null)
   const [isLiveMode, setIsLiveMode] = useState(false)
   const [showUnlock, setShowUnlock] = useState(false)
   const [unlockInput, setUnlockInput] = useState('')
@@ -345,7 +361,14 @@ export default function Home() {
         {/* Output */}
         {result && (
           <div ref={outputRef} style={{ paddingTop: '16px' }}>
-            <OutputPanel data={result} />
+            <OutputPanel
+              data={result}
+              isLiveMode={isLiveMode}
+              liveToken={typeof window !== 'undefined' ? sessionStorage.getItem('career_live_token') || '' : ''}
+              resumeData={result.resume}
+              coverLetterData={result.coverLetter}
+              companyName={extractCompanyName(jobPosting)}
+            />
           </div>
         )}
       </main>

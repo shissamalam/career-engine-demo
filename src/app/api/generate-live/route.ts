@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8000,
       system: DNA_PROMPT,
       messages: [
         {
@@ -71,8 +71,40 @@ Return a JSON object with EXACTLY this structure — match every field name and 
     "redFlags": [
       "<compensation red flag to watch for>"
     ]
+  },
+  "resume": {
+    "targetTitle": "<role-specific professional title for this job, e.g. 'Director of Revenue Operations' or 'VP of Go-To-Market'>",
+    "summary": "<2-3 sentence professional summary tailored to this specific role>",
+    "experience": [
+      {
+        "company": "<company name>",
+        "title": "<job title>",
+        "dates": "<date range>",
+        "bullets": [
+          "<achievement bullet — specific, quantified where possible>",
+          "<achievement bullet>",
+          "<achievement bullet>"
+        ]
+      }
+    ],
+    "skills": ["<skill 1>", "<skill 2>", "<skill 3>"],
+    "education": "<degree and institution>"
+  },
+  "coverLetter": {
+    "opening": "<first paragraph — specific hook connecting Sam to this company and role>",
+    "body": "<second paragraph — two strongest matching credentials with specific evidence>",
+    "close": "<third paragraph — forward-looking close, confident, no filler>"
   }
 }
+
+Sam's experience for the resume (use this data, do not invent):
+- Partner, Clayton Korte Architecture (2016–2025), Austin/San Antonio TX
+- Project Architect, Clayton Korte Architecture (2014–2016)
+- Project Manager, Clayton Korte Architecture (2011–2014)
+- Project Designer, Clayton Korte Architecture (2010–2011)
+- M.Arch + B.S. Architecture, Washington State University
+- AI systems: SATS (13-container autonomous trading), BizBox (business intelligence suite), Azure RAG pipeline, Financial Dashboard
+- CRM: Zoho implementation from scratch
 
 Requirements:
 - Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags

@@ -16,7 +16,23 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'downloads', label: 'Downloads' },
 ]
 
-export default function OutputPanel({ data }: { data: typeof DEMO_OUTPUT }) {
+interface OutputPanelProps {
+  data: typeof DEMO_OUTPUT
+  isLiveMode?: boolean
+  liveToken?: string
+  resumeData?: object
+  coverLetterData?: object
+  companyName?: string
+}
+
+export default function OutputPanel({
+  data,
+  isLiveMode,
+  liveToken,
+  resumeData,
+  coverLetterData,
+  companyName,
+}: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('rolefit')
 
   return (
@@ -59,7 +75,15 @@ export default function OutputPanel({ data }: { data: typeof DEMO_OUTPUT }) {
       {activeTab === 'rolefit' && <RoleFitPanel data={data.roleFit} />}
       {activeTab === 'talking' && <TalkingPointsPanel points={data.talkingPoints} />}
       {activeTab === 'salary' && <SalaryPanel data={data.salaryBrief} />}
-      {activeTab === 'downloads' && <DownloadsPanel />}
+      {activeTab === 'downloads' && (
+        <DownloadsPanel
+          isLiveMode={isLiveMode}
+          liveToken={liveToken}
+          resumeData={resumeData}
+          coverLetterData={coverLetterData}
+          companyName={companyName}
+        />
+      )}
     </div>
   )
 }
