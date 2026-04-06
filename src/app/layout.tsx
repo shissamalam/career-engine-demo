@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import DemoBanner from '@/components/DemoBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -15,7 +14,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
-        <DemoBanner />
         {children}
       </body>
     </html>
