@@ -28,35 +28,56 @@ export async function POST(request: Request) {
       messages: [
         {
           role: 'user',
-          content: `Analyze this job posting and produce a complete career package.
+          content: `Analyze this job posting for Sam Manning and produce a complete career package.
 
 JOB POSTING:
 ${jobPosting}
 
-Return a JSON object with exactly this structure:
+Return a JSON object with EXACTLY this structure — match every field name and type precisely:
+
 {
   "roleFit": {
-    "score": <number 0-100>,
-    "summary": "<2-3 sentence assessment>",
-    "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-    "gaps": ["<gap 1>", "<gap 2>"]
+    "score": <integer 0-100>,
+    "scoreLabel": "<one of: Poor match | Partial match | Good match | Strong match | Exceptional match>",
+    "summary": "<2-3 sentences assessing overall fit>",
+    "strengths": [
+      {
+        "title": "<strength title>",
+        "detail": "<2-3 sentence explanation specific to Sam's background>"
+      }
+    ],
+    "gaps": [
+      {
+        "title": "<gap title>",
+        "detail": "<2-3 sentence explanation with framing advice>",
+        "severity": "<one of: minor | moderate | major>"
+      }
+    ]
   },
   "talkingPoints": [
     {
-      "theme": "<theme name>",
-      "point": "<the talking point>",
-      "evidence": "<specific evidence from Sam's background>"
+      "question": "<likely interview question>",
+      "approach": "<how to answer it using Sam's specific background>",
+      "keyMessage": "<the one sentence that must land>"
     }
   ],
   "salaryBrief": {
-    "range": "<salary range>",
-    "target": "<target number>",
-    "rationale": "<2-3 sentences on positioning>",
-    "tactics": ["<tactic 1>", "<tactic 2>", "<tactic 3>"]
+    "postedRange": "<salary range as posted in the job description, or 'Not specified' if absent>",
+    "marketContext": "<2-3 sentences on market rates for this role, level, and location>",
+    "recommendation": "<specific target number and negotiation position>",
+    "negotiationNotes": [
+      "<specific negotiation tactic or data point>"
+    ],
+    "redFlags": [
+      "<compensation red flag to watch for>"
+    ]
   }
 }
 
-Return only valid JSON. No markdown fences, no preamble, no explanation.`,
+Requirements:
+- Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
+- Be specific to Sam's actual background — no generic advice
+- Return only valid JSON. No markdown fences, no preamble, no explanation.`,
         },
       ],
     })
@@ -66,7 +87,6 @@ Return only valid JSON. No markdown fences, no preamble, no explanation.`,
       throw new Error('Unexpected response type')
     }
 
-    // Strip markdown fences if present
     const cleaned = content.text
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
@@ -82,7 +102,6 @@ Return only valid JSON. No markdown fences, no preamble, no explanation.`,
     })
   } catch (error) {
     console.error('Live generation error:', error)
-    // Return the actual error message so we can debug
     return Response.json(
       { error: 'Generation failed', detail: String(error) },
       { status: 500 }
