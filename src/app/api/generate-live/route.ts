@@ -97,14 +97,16 @@ Return a JSON object with EXACTLY this structure — match every field name and 
   }
 }
 
-Sam's experience for the resume (use this data, do not invent):
-- Partner, Clayton Korte Architecture (2016–2025), Austin/San Antonio TX
-- Project Architect, Clayton Korte Architecture (2014–2016)
-- Project Manager, Clayton Korte Architecture (2011–2014)
-- Project Designer, Clayton Korte Architecture (2010–2011)
-- M.Arch + B.S. Architecture, Washington State University
-- AI systems: SATS (13-container autonomous trading), BizBox (business intelligence suite), Azure RAG pipeline, Financial Dashboard
-- CRM: Zoho implementation from scratch
+CRITICAL RESUME RULES:
+- Maximum 2 pages when rendered as a Word document
+- Use exact dates: Partner 2020-2025, Project Architect 2014-2020, Project Manager 2011-2014, Project Designer 2010-2011 (only if fits)
+- Use exact contact: sjmanning@gmail.com, 360-261-1531, linkedin.com/in/sjmanningtx, Austin TX
+- Include FMVA certification in education: "M.Arch + B.S. Architecture, Washington State University | FMVA (CFI, in progress)"
+- Include the 16x expansion ($80K to $1.3M+) and $75M+ numbers in Partner role bullets
+- Include the deal preservation story ($35M to $69M restructured to $40M, preserved $1.6M) if space permits
+- If content does not fit 2 pages, cut Project Designer first, then abbreviate Project Manager, never cut the numbers
+- Location is always Austin TX, never Georgetown TX
+- Include AI Systems Developer (2024-Present) as a separate experience entry
 
 Requirements:
 - Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
