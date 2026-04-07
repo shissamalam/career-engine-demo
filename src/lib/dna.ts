@@ -160,7 +160,7 @@ EDUCATION
 M.Arch, Washington State University
 B.S. Architecture, Washington State University
 Financial Modeling and Valuation Analyst (FMVA) — CFI
-  Status: Certification in progress, exam April 2026
+  FMVA Certified, April 2026
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TARGET ROLES
