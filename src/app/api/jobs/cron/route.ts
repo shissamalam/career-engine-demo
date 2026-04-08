@@ -152,11 +152,25 @@ JOB TITLE: ${title}
 COMPANY: ${company}
 DESCRIPTION: ${description.slice(0, 2000)}
 
+Scoring instructions:
+- Score 0-100 for overall fit with Sam's background and goals
+- Factor in BOTH skills match AND environment fit
+- Increase score if: early stage company, builder culture,
+  execution authority, genuine collaboration signals,
+  AI-forward, founder who wants operational build-out
+- Decrease score if: command-and-control leadership signals,
+  large bureaucratic company, advisory-only role,
+  "support the CEO" language, consensus-heavy culture
+- Sam does NOT want to rebuild the same dysfunction he left.
+  A role that matches his skills but signals a toxic or
+  threatened leadership environment should score no higher
+  than 55 regardless of skill match.
+
 Return ONLY a JSON object:
 {
   "score": <integer 0-100>,
   "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match>",
-  "summary": "<one sentence — why this is or isn't a strong match>"
+  "summary": "<one sentence — why this is or isn't a strong match, including environment fit>"
 }
 
 No markdown, no preamble.`
@@ -277,11 +291,25 @@ JOB TITLE: ${job.title}
 COMPANY: ${job.company?.display_name || 'Unknown'}
 DESCRIPTION: ${description.slice(0, 2000)}
 
+Scoring instructions:
+- Score 0-100 for overall fit with Sam's background and goals
+- Factor in BOTH skills match AND environment fit
+- Increase score if: early stage company, builder culture,
+  execution authority, genuine collaboration signals,
+  AI-forward, founder who wants operational build-out
+- Decrease score if: command-and-control leadership signals,
+  large bureaucratic company, advisory-only role,
+  "support the CEO" language, consensus-heavy culture
+- Sam does NOT want to rebuild the same dysfunction he left.
+  A role that matches his skills but signals a toxic or
+  threatened leadership environment should score no higher
+  than 55 regardless of skill match.
+
 Return ONLY a JSON object:
 {
   "score": <integer 0-100>,
   "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match>",
-  "summary": "<one sentence — why this is or isn't a strong match>"
+  "summary": "<one sentence — why this is or isn't a strong match, including environment fit>"
 }
 
 No markdown, no preamble.`

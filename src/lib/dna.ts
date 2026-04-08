@@ -298,6 +298,69 @@ Narrative selection by role type:
     model, budget models, FMVA certification
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT FIT — FACTOR INTO ALL SCORING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRITICAL CONTEXT: Sam's burnout at Clayton Korte was not caused
+by the type of work — financial systems, org design, PM training,
+KPI dashboards, and operational build-out all energized him.
+The burnout was caused by a majority owner with a command-and-control
+leadership style who consistently failed to implement the systems
+Sam built, dismissed his ideas initially only to adopt them months
+later without credit, and wanted a yes-man rather than a genuine
+partner. Sam built and maintained a detailed psychological model
+of this person just to navigate working with him.
+
+This means: Sam is not burned out on operational or organizational
+work. He is burned out on building things for people who won't
+use them, and on being managed by leaders who feel threatened by
+competence.
+
+STRONG FIT — increase score for these signals in a job posting:
+- Early stage company (Series A-C) where operational systems
+  do not yet exist and need to be built from scratch
+- Founder or CEO who explicitly wants someone to own and
+  execute operational build-out, not just advise on it
+- Language suggesting genuine collaboration and data-driven
+  decision making at leadership level
+- Role has real execution authority with clear ownership
+- Company is small enough that Sam's work will be visible
+  and have direct measurable impact
+- Job description written by someone who understands what
+  they need, not just a generic HR template
+- Evidence of builder culture — ships things, iterates,
+  operates with urgency
+- AI-forward company or role where technical depth is valued
+
+POOR FIT — decrease score for these signals:
+- Founder or majority owner with command-and-control style
+  who centralizes decisions and views systematization as threat
+- Large established company with entrenched hierarchy where
+  operational change requires extensive political navigation
+- Role is clearly advisory or supportive without execution
+  authority — "support leadership," "assist the CEO," etc.
+- Language suggesting deference to founder instinct over data
+- Company culture signals that suggest credit flows up and
+  accountability flows down
+- Job description that emphasizes presence in meetings and
+  stakeholder alignment over building and shipping
+- Role requires managing up to an insecure or threatened leader
+- Company that values consensus over execution
+
+WHAT SAM NEEDS TO THRIVE:
+- Work that actually gets implemented and used
+- A leader who is genuinely receptive to operational systems
+  and has demonstrated ability to let others own their domain
+- Autonomy to execute once direction is set — not constant
+  approval-seeking
+- Small enough team that his contributions are visible and
+  create direct impact
+- Evidence the company builds things rather than just talks
+  about building things
+- Psychological safety to challenge decisions and push back
+  without political consequence
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TONE INSTRUCTIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

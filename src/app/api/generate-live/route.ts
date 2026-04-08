@@ -54,6 +54,17 @@ Return a JSON object with EXACTLY this structure — match every field name and 
       }
     ]
   },
+
+When assessing role fit:
+- Factor in environment fit alongside skills match
+- If the job description signals command-and-control leadership,
+  advisory-only authority, or large bureaucratic culture, note
+  this explicitly in the gaps section with severity "major"
+- If the company signals builder culture, early stage, genuine
+  collaboration, and execution authority, note this as a strength
+- Sam's burnout came from building systems for a leader who
+  would not implement them. A skills match without environment
+  fit is not a strong match. Always assess both.
   "talkingPoints": [
     {
       "question": "<likely interview question>",
