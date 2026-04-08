@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         `https://api.adzuna.com/v1/api/jobs/us/search/1` +
         `?app_id=${ADZUNA_APP_ID}` +
         `&app_key=${ADZUNA_APP_KEY}` +
-        `&results_per_page=10` +
+        `&results_per_page=5` +
         `&what=${query}` +
         `&salary_min=150000` +
         `&full_time=1` +
@@ -89,13 +89,10 @@ No markdown, no preamble.`
           const content = message.content[0]
           if (content.type !== 'text') continue
 
-          const cleaned = content.text
-            .replace(/^```json\s*/i, '')
-            .replace(/^```\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .trim()
-
-          const scored = JSON.parse(cleaned)
+          const rawText = content.text
+          const jsonMatch = rawText.match(/{[\s\S]*}/)
+          if (!jsonMatch) continue
+          const scored = JSON.parse(jsonMatch[0])
 
           if (scored.score < 90) continue
 
