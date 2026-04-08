@@ -111,7 +111,7 @@ No markdown, no preamble.`
                     }
                     if (!scored) continue
 
-          if (scored.score < 75) continue
+          if (scored.score < 60) continue
 
           const salaryMin = job.salary_min ? Math.round(job.salary_min) : null
           const salaryMax = job.salary_max ? Math.round(job.salary_max) : null
