@@ -42,28 +42,44 @@ async function scrapeVibeCodeCareers(
   try {
     const pageRes = await fetch('https://vibecodecareers.com/jobs/', {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; career-bot/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         'Accept': 'text/html',
       },
     })
     const html = await pageRes.text()
 
-    // Find job cards that are Remote AND posted within 24 hours
+    // Split into chunks on each job URL occurrence
     const remoteRecentUrls: string[] = []
-    const cardPattern = /href="(https:\/\/vibecodecareers\.com\/job\/[^"]+)"[\s\S]{0,2000}?Remote[\s\S]{0,500}?Posted\s+(\d+)\s*(min|hr|day)/gi
-    let cardMatch: RegExpExecArray | null
-    while ((cardMatch = cardPattern.exec(html)) !== null) {
-      const url = cardMatch[1]
-      const amount = parseInt(cardMatch[2])
-      const unit = cardMatch[3].toLowerCase()
+    const seenUrls = new Set<string>()
+    const parts = html.split('https://vibecodecareers.com/job/')
 
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i]
+
+      const slugEnd = part.indexOf('"')
+      if (slugEnd === -1) continue
+      const slug = part.slice(0, slugEnd)
+      const jobUrl = 'https://vibecodecareers.com/job/' + slug
+
+      if (seenUrls.has(jobUrl)) continue
+      seenUrls.add(jobUrl)
+
+      const window = part.slice(0, 2000)
+
+      if (!/\bRemote\b/i.test(window)) continue
+
+      const postedMatch = window.match(/Posted\s+(\d+)\s*(min|hr|day)/i)
+      if (!postedMatch) continue
+
+      const amount = parseInt(postedMatch[1])
+      const unit = postedMatch[2].toLowerCase()
       let hours = 999
       if (unit.startsWith('min')) hours = amount / 60
       else if (unit.startsWith('hr')) hours = amount
       else if (unit.startsWith('day')) hours = amount * 24
 
-      if (hours <= 24 && !remoteRecentUrls.includes(url)) {
-        remoteRecentUrls.push(url)
+      if (hours <= 24) {
+        remoteRecentUrls.push(jobUrl)
       }
     }
 
