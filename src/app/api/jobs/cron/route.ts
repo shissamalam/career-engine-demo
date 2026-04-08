@@ -138,7 +138,7 @@ No markdown, no preamble.`
               ${job.redirect_url},
               ${scored.score},
               ${scored.label},
-              ${(scored as any).summary ?? (scored as any).summit ?? (scored as any).summery ?? ""}
+              ${(scored as any).summary ?? (scored as any).summit ?? (scored as any).summery ?? Object.values(scored as any).find((v: any) => typeof v === "string" && v.length > 20) ?? ""}
             )
             ON CONFLICT (external_id) DO NOTHING
           `
