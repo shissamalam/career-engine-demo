@@ -368,6 +368,19 @@ export default function Home() {
               >
                 unlock live mode
               </button>
+              <a
+                href="/jobs"
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  letterSpacing: '0.06em',
+                  color: '#4A4846',
+                  textDecoration: 'none',
+                  marginLeft: '16px',
+                }}
+              >
+                job leads →
+              </a>
             </div>
           )}
         </div>
