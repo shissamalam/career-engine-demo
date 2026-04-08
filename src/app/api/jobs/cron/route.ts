@@ -89,10 +89,27 @@ No markdown, no preamble.`
           const content = message.content[0]
           if (content.type !== 'text') continue
 
-          const rawText = content.text
-          const jsonMatch = rawText.match(/{[\s\S]*}/)
-          if (!jsonMatch) continue
-          const scored = JSON.parse(jsonMatch[0])
+                    const rawText = content.text.trim()
+                    let scored: {score: number, label: string, summary: string} | null = null
+                    try {
+                      // Try direct parse first
+                      scored = JSON.parse(rawText)
+                    } catch {
+                      // Find JSON by locating first { and last }
+                      const start = rawText.indexOf('{')
+                      const end = rawText.lastIndexOf('}')
+                      if (start === -1 || end === -1 || end <= start) {
+                        results.errors.push('No JSON found in: ' + rawText.slice(0, 100))
+                        continue
+                      }
+                      try {
+                        scored = JSON.parse(rawText.slice(start, end + 1))
+                      } catch (e2) {
+                        results.errors.push('Parse failed: ' + rawText.slice(0, 150))
+                        continue
+                      }
+                    }
+                    if (!scored) continue
 
           if (scored.score < 90) continue
 
