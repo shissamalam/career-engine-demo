@@ -368,15 +368,18 @@ export default function Home() {
               >
                 unlock live mode
               </button>
+            </div>
+          )}
+          {isLiveMode && (
+            <div style={{ textAlign: 'center', marginTop: '12px' }}>
               <a
                 href="/jobs"
                 style={{
                   fontSize: '11px',
                   fontFamily: 'IBM Plex Mono, monospace',
                   letterSpacing: '0.06em',
-                  color: '#4A4846',
+                  color: '#C8843A',
                   textDecoration: 'none',
-                  marginLeft: '16px',
                 }}
               >
                 job leads →
