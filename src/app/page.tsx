@@ -102,6 +102,20 @@ export default function Home() {
     }
   }
 
+  // Pre-fill from job board analyze button
+  useEffect(() => {
+    const prefill = sessionStorage.getItem('career_prefill_job')
+    const prefillToken = sessionStorage.getItem('career_live_token')
+    if (prefill) {
+      setJobPosting(prefill)
+      sessionStorage.removeItem('career_prefill_job')
+      sessionStorage.removeItem('career_prefill_title')
+      if (prefillToken) {
+        setIsLiveMode(true)
+      }
+    }
+  }, [])
+
   // Smooth scroll to output when result appears
   useEffect(() => {
     if (result && outputRef.current) {
