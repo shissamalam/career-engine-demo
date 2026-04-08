@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         `&app_key=${ADZUNA_APP_KEY}` +
         `&results_per_page=5` +
         `&what=${query}` +
-        `&salary_min=150000` +
+        
         `&full_time=1` +
         `&sort_by=date`
 
@@ -111,7 +111,7 @@ No markdown, no preamble.`
                     }
                     if (!scored) continue
 
-          if (scored.score < 90) continue
+          if (scored.score < 75) continue
 
           const salaryMin = job.salary_min ? Math.round(job.salary_min) : null
           const salaryMax = job.salary_max ? Math.round(job.salary_max) : null
@@ -138,7 +138,7 @@ No markdown, no preamble.`
               ${job.redirect_url},
               ${scored.score},
               ${scored.label},
-              ${scored.summary}
+              ${(scored as any).summary ?? (scored as any).summit ?? (scored as any).summery ?? ""}
             )
             ON CONFLICT (external_id) DO NOTHING
           `
