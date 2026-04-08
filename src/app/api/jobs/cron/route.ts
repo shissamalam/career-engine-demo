@@ -301,7 +301,7 @@ No markdown, no preamble.`
 
           const scored = JSON.parse(cleaned)
 
-          if (scored.score < 90) continue
+          if (scored.score < 70) continue
 
           const salaryMin = job.salary_min ? Math.round(job.salary_min) : null
           const salaryMax = job.salary_max ? Math.round(job.salary_max) : null
