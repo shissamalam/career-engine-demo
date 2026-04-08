@@ -21,6 +21,194 @@ const SEARCH_TITLES = [
 
 export const maxDuration = 300
 
+function parsePostedHours(postedText: string): number {
+  const text = postedText.toLowerCase()
+  const minsMatch = text.match(/(\d+)\s*min/)
+  if (minsMatch) return parseInt(minsMatch[1]) / 60
+  const hoursMatch = text.match(/(\d+)\s*hr/)
+  if (hoursMatch) return parseInt(hoursMatch[1])
+  const daysMatch = text.match(/(\d+)\s*day/)
+  if (daysMatch) return parseInt(daysMatch[1]) * 24
+  return 999
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function scrapeVibeCodeCareers(
+  client: Anthropic,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sql: any,
+  results: { fetched: number; scored: number; saved: number; errors: string[] }
+) {
+  try {
+    const pageRes = await fetch('https://vibecodecareers.com/jobs/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; career-bot/1.0)',
+        'Accept': 'text/html',
+      },
+    })
+    const html = await pageRes.text()
+
+    // Find job cards that are Remote AND posted within 24 hours
+    const remoteRecentUrls: string[] = []
+    const cardPattern = /href="(https:\/\/vibecodecareers\.com\/job\/[^"]+)"[\s\S]{0,2000}?Remote[\s\S]{0,500}?Posted\s+(\d+)\s*(min|hr|day)/gi
+    let cardMatch: RegExpExecArray | null
+    while ((cardMatch = cardPattern.exec(html)) !== null) {
+      const url = cardMatch[1]
+      const amount = parseInt(cardMatch[2])
+      const unit = cardMatch[3].toLowerCase()
+
+      let hours = 999
+      if (unit.startsWith('min')) hours = amount / 60
+      else if (unit.startsWith('hr')) hours = amount
+      else if (unit.startsWith('day')) hours = amount * 24
+
+      if (hours <= 24 && !remoteRecentUrls.includes(url)) {
+        remoteRecentUrls.push(url)
+      }
+    }
+
+    results.fetched += remoteRecentUrls.length
+
+    for (const jobUrl of remoteRecentUrls) {
+      try {
+        const existing = await sql`
+          SELECT id FROM job_leads WHERE url = ${jobUrl}
+        `
+        if (existing.length > 0) continue
+
+        const detailRes = await fetch(jobUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; career-bot/1.0)',
+            'Accept': 'text/html',
+          },
+        })
+        const detailHtml = await detailRes.text()
+
+        const titleMatch =
+          detailHtml.match(/<meta\s+property="og:title"\s+content="([^"]+)"/) ||
+          detailHtml.match(/<h1[^>]*>([^<]+)<\/h1>/)
+        const title = titleMatch
+          ? titleMatch[1].replace(' - VibeCodeCareers', '').trim()
+          : 'Unknown'
+
+        const companyMatch =
+          detailHtml.match(/class="[^"]*company[^"]*"[^>]*>([^<]+)</) ||
+          detailHtml.match(/"hiringOrganization"[^}]*"name"\s*:\s*"([^"]+)"/)
+        const company = companyMatch ? companyMatch[1].trim() : 'Unknown'
+
+        const salaryMatch = detailHtml.match(/\$[\d,]+\s*[-–]\s*\$[\d,]+(?:\/yr)?/)
+        const salaryDisplay = salaryMatch ? salaryMatch[0].replace('/yr', '') : null
+
+        const bodyMatch =
+          detailHtml.match(/<div[^>]*class="[^"]*job[^"]*description[^"]*"[^>]*>([\s\S]+?)<\/div>/) ||
+          detailHtml.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]{200,}?)<\/div>/)
+        let description = ''
+        if (bodyMatch) {
+          description = bodyMatch[1]
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        }
+
+        if (description.length < 100) {
+          description = detailHtml
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(500, 3000)
+        }
+
+        if (description.length < 100) continue
+
+        const message = await client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 500,
+          system: DNA_PROMPT,
+          messages: [{
+            role: 'user',
+            content: `Score this job posting for Sam Manning.
+
+JOB TITLE: ${title}
+COMPANY: ${company}
+DESCRIPTION: ${description.slice(0, 2000)}
+
+Return ONLY a JSON object:
+{
+  "score": <integer 0-100>,
+  "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match>",
+  "summary": "<one sentence — why this is or isn't a strong match>"
+}
+
+No markdown, no preamble.`
+          }]
+        })
+
+        results.scored++
+
+        const content = message.content[0]
+        if (content.type !== 'text') continue
+
+        const rawText = content.text.trim()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let scored: { score: number; label: string; summary: string } | null = null
+        try {
+          scored = JSON.parse(rawText)
+        } catch {
+          const start = rawText.indexOf('{')
+          const end = rawText.lastIndexOf('}')
+          if (start === -1 || end === -1 || end <= start) continue
+          try {
+            scored = JSON.parse(rawText.slice(start, end + 1))
+          } catch {
+            continue
+          }
+        }
+        if (!scored) continue
+        if (scored.score < 60) continue
+
+        const slug = jobUrl.split('/job/')[1]?.replace(/\//g, '') || jobUrl
+        const externalId = 'vcc-' + slug
+
+        await sql`
+          INSERT INTO job_leads (
+            external_id, title, company, location,
+            salary_min, salary_max, salary_display,
+            description, url, fit_score, fit_label, fit_summary, source
+          ) VALUES (
+            ${externalId},
+            ${title},
+            ${company},
+            ${'Remote'},
+            ${null},
+            ${null},
+            ${salaryDisplay},
+            ${description.slice(0, 5000)},
+            ${jobUrl},
+            ${scored.score},
+            ${scored.label},
+            ${scored.summary},
+            ${'vibecodecareers'}
+          )
+          ON CONFLICT (external_id) DO NOTHING
+        `
+        results.saved++
+
+        await new Promise(r => setTimeout(r, 1000))
+
+      } catch (jobErr) {
+        results.errors.push(`VCC job error: ${String(jobErr)}`)
+      }
+    }
+
+  } catch (err) {
+    results.errors.push(`VCC scraper error: ${String(err)}`)
+  }
+}
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -111,7 +299,7 @@ No markdown, no preamble.`
             INSERT INTO job_leads (
               external_id, title, company, location,
               salary_min, salary_max, salary_display,
-              description, url, fit_score, fit_label, fit_summary
+              description, url, fit_score, fit_label, fit_summary, source
             ) VALUES (
               ${String(job.id)},
               ${job.title},
@@ -124,7 +312,8 @@ No markdown, no preamble.`
               ${job.redirect_url},
               ${scored.score},
               ${scored.label},
-              ${scored.summary}
+              ${scored.summary},
+              ${'adzuna'}
             )
             ON CONFLICT (external_id) DO NOTHING
           `
@@ -141,6 +330,9 @@ No markdown, no preamble.`
       results.errors.push(`Fetch error for "${title}": ${String(fetchErr)}`)
     }
   }
+
+  // Run VibeCodeCareers scraper
+  await scrapeVibeCodeCareers(client, sql, results)
 
   return Response.json({ success: true, ...results })
 }

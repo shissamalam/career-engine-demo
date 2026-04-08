@@ -22,7 +22,12 @@ export async function initDb() {
       fit_label TEXT,
       fit_summary TEXT,
       date_found TIMESTAMP DEFAULT NOW(),
-      status TEXT DEFAULT 'new'
+      status TEXT DEFAULT 'new',
+      source TEXT DEFAULT 'adzuna'
     )
+  `
+  await sql`
+    ALTER TABLE job_leads
+    ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'adzuna'
   `
 }
