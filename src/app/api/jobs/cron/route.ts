@@ -143,34 +143,32 @@ async function scrapeVibeCodeCareers(
           system: DNA_PROMPT,
           messages: [{
             role: 'user',
-            content: `Score this job posting for Sam Manning.
+            content: `You are scoring a job posting for Sam Manning.
+
+STEP 1 — LOCATION GATE (evaluate before anything else):
+Is this role on-site or hybrid AND located outside the Austin, TX metro area AND does it not explicitly state remote work is available?
+If YES to all three: output {"score": 0, "label": "Excluded - relocation required", "summary": "Role requires relocation outside Austin TX. Hard filter applied."} and stop immediately.
+
+STEP 2 — Only if the role passed Step 1, score it 0–100 using this rubric:
+- Role type fit (30 pts max): GTM Ops/RevOps/BizOps/AI Implementation with build = 25-30. Ops-heavy with some build = 15-24. Mixed with sales = 5-14. AE/BD/SWE/pure PM = 0-4.
+- Company stage & size (20 pts max): Seed/Series A sub-50 people = 17-20. Series B 50-100 = 12-16. 100-200 people = 6-11. 200+ or enterprise = 0-5.
+- Remote/location (15 pts max): Fully remote = 15. Remote-first optional Austin travel = 10-14. Hybrid Austin = 5-9. Outside Austin no remote = 0.
+- Compensation signal (15 pts max): $180K+ stated = 13-15. $150-180K = 9-12. $120-150K with equity = 4-8. Below $120K = 0-3.
+- Build ownership (10 pts max): Owns building from zero = 9-10. Significant build component = 6-8. Some tooling work = 3-5. Advisory/management only = 0-2.
+- Adoption authority (5 pts max): Authority over implementation = 5. Reasonable cross-functional influence = 3-4. Hands off to others = 1-2. No adoption ownership = 0.
+- Team caliber (5 pts max): YC/tier-1/technical founders = 5. Experienced founders with traction = 3-4. Unknown founders = 1-2. Red flags = 0.
 
 JOB TITLE: ${title}
 COMPANY: ${company}
+LOCATION: Remote
 DESCRIPTION: ${description.slice(0, 2000)}
 
-Scoring instructions:
-- Score 0-100 for overall fit with Sam's background and goals
-- Factor in BOTH skills match AND environment fit
-- Increase score if: early stage company, builder culture,
-  execution authority, genuine collaboration signals,
-  AI-forward, founder who wants operational build-out
-- Decrease score if: command-and-control leadership signals,
-  large bureaucratic company, advisory-only role,
-  "support the CEO" language, consensus-heavy culture
-- Sam does NOT want to rebuild the same dysfunction he left.
-  A role that matches his skills but signals a toxic or
-  threatened leadership environment should score no higher
-  than 55 regardless of skill match.
-
-Return ONLY a JSON object:
+Return ONLY a JSON object, no markdown, no preamble:
 {
   "score": <integer 0-100>,
-  "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match>",
-  "summary": "<one sentence — why this is or isn't a strong match, including environment fit>"
-}
-
-No markdown, no preamble.`
+  "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match|Excluded - relocation required|Disqualified>",
+  "summary": "<one sentence explaining the score or disqualification>"
+}`
           }]
         })
 
@@ -282,34 +280,32 @@ export async function GET(request: NextRequest) {
             system: DNA_PROMPT,
             messages: [{
               role: 'user',
-              content: `Score this job posting for Sam Manning.
+              content: `You are scoring a job posting for Sam Manning.
+
+STEP 1 — LOCATION GATE (evaluate before anything else):
+Is this role on-site or hybrid AND located outside the Austin, TX metro area AND does it not explicitly state remote work is available?
+If YES to all three: output {"score": 0, "label": "Excluded - relocation required", "summary": "Role requires relocation outside Austin TX. Hard filter applied."} and stop immediately.
+
+STEP 2 — Only if the role passed Step 1, score it 0–100 using this rubric:
+- Role type fit (30 pts max): GTM Ops/RevOps/BizOps/AI Implementation with build = 25-30. Ops-heavy with some build = 15-24. Mixed with sales = 5-14. AE/BD/SWE/pure PM = 0-4.
+- Company stage & size (20 pts max): Seed/Series A sub-50 people = 17-20. Series B 50-100 = 12-16. 100-200 people = 6-11. 200+ or enterprise = 0-5.
+- Remote/location (15 pts max): Fully remote = 15. Remote-first optional Austin travel = 10-14. Hybrid Austin = 5-9. Outside Austin no remote = 0.
+- Compensation signal (15 pts max): $180K+ stated = 13-15. $150-180K = 9-12. $120-150K with equity = 4-8. Below $120K = 0-3.
+- Build ownership (10 pts max): Owns building from zero = 9-10. Significant build component = 6-8. Some tooling work = 3-5. Advisory/management only = 0-2.
+- Adoption authority (5 pts max): Authority over implementation = 5. Reasonable cross-functional influence = 3-4. Hands off to others = 1-2. No adoption ownership = 0.
+- Team caliber (5 pts max): YC/tier-1/technical founders = 5. Experienced founders with traction = 3-4. Unknown founders = 1-2. Red flags = 0.
 
 JOB TITLE: ${job.title}
 COMPANY: ${job.company?.display_name || 'Unknown'}
+LOCATION: ${job.location?.display_name || 'Unknown'}
 DESCRIPTION: ${description.slice(0, 2000)}
 
-Scoring instructions:
-- Score 0-100 for overall fit with Sam's background and goals
-- Factor in BOTH skills match AND environment fit
-- Increase score if: early stage company, builder culture,
-  execution authority, genuine collaboration signals,
-  AI-forward, founder who wants operational build-out
-- Decrease score if: command-and-control leadership signals,
-  large bureaucratic company, advisory-only role,
-  "support the CEO" language, consensus-heavy culture
-- Sam does NOT want to rebuild the same dysfunction he left.
-  A role that matches his skills but signals a toxic or
-  threatened leadership environment should score no higher
-  than 55 regardless of skill match.
-
-Return ONLY a JSON object:
+Return ONLY a JSON object, no markdown, no preamble:
 {
   "score": <integer 0-100>,
-  "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match>",
-  "summary": "<one sentence — why this is or isn't a strong match, including environment fit>"
-}
-
-No markdown, no preamble.`
+  "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match|Excluded - relocation required|Disqualified>",
+  "summary": "<one sentence explaining the score or disqualification>"
+}`
             }]
           })
 
