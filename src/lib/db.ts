@@ -30,4 +30,15 @@ export async function initDb() {
     ALTER TABLE job_leads
     ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'adzuna'
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS ats_companies (
+      id SERIAL PRIMARY KEY,
+      slug TEXT NOT NULL,
+      name TEXT NOT NULL,
+      ats TEXT NOT NULL CHECK (ats IN ('ashby', 'lever', 'greenhouse')),
+      verified_at TIMESTAMPTZ DEFAULT NOW(),
+      last_checked TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(slug, ats)
+    )
+  `
 }

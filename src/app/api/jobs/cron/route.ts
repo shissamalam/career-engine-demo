@@ -19,34 +19,19 @@ const SEARCH_TITLES = [
   'Director of Business Operations',
 ]
 
-// ATS board slugs — these are the board_token/slug used by each ATS platform.
-// Format: { slug: string, name: string, ats: 'ashby' | 'lever' | 'greenhouse' }
+// Verified ATS board slugs — seed list. Dynamic discoveries stored in ats_companies table.
 const TARGET_COMPANIES: { slug: string; name: string; ats: 'ashby' | 'lever' | 'greenhouse' }[] = [
-  // AEC-tech / PropTech / ConstructionTech
-  { slug: 'higharc', name: 'Higharc', ats: 'greenhouse' },
-  { slug: 'trunktools', name: 'Trunk Tools', ats: 'ashby' },
-  { slug: 'buildops', name: 'BuildOps', ats: 'greenhouse' },
-  { slug: 'monograph', name: 'Monograph', ats: 'lever' },
-  { slug: 'kojo', name: 'Kojo', ats: 'greenhouse' },
-  { slug: 'constrafor', name: 'Constrafor', ats: 'lever' },
-  { slug: 'versatile', name: 'Versatile', ats: 'greenhouse' },
-  { slug: 'dispatchtrack', name: 'DispatchTrack', ats: 'lever' },
+  // Ashby — verified
+  { slug: 'higharc',   name: 'Higharc',   ats: 'ashby' },
+  { slug: 'sardine',   name: 'Sardine',   ats: 'ashby' },
+  { slug: 'ema',       name: 'Ema',       ats: 'ashby' },
+  { slug: 'salesloft', name: 'Salesloft', ats: 'ashby' },
+  // Greenhouse — verified
+  { slug: 'buildops',  name: 'BuildOps',  ats: 'greenhouse' },
   { slug: 'openspace', name: 'OpenSpace', ats: 'greenhouse' },
-  { slug: 'realisinc', name: 'Realis', ats: 'ashby' },
-  { slug: 'nuvolo', name: 'Nuvolo', ats: 'greenhouse' },
-  { slug: 'honest-buildings', name: 'Honest Buildings', ats: 'lever' },
-  // GTM / RevOps tooling
-  { slug: 'commissionly', name: 'Commissionly', ats: 'lever' },
-  { slug: 'clari', name: 'Clari', ats: 'greenhouse' },
-  { slug: 'gong', name: 'Gong', ats: 'greenhouse' },
-  { slug: 'people-ai', name: 'People.ai', ats: 'greenhouse' },
-  { slug: 'apollo', name: 'Apollo.io', ats: 'greenhouse' },
-  { slug: 'revelateai', name: 'Revelate', ats: 'ashby' },
-  // AI-native B2B SaaS
-  { slug: 'ema', name: 'Ema', ats: 'ashby' },
-  { slug: 'regrello', name: 'Regrello', ats: 'ashby' },
-  { slug: 'sardine', name: 'Sardine', ats: 'ashby' },
-  { slug: 'properly', name: 'Properly', ats: 'ashby' },
+  { slug: 'apollo',    name: 'Apollo.io', ats: 'greenhouse' },
+  { slug: 'gongio',    name: 'Gong',      ats: 'greenhouse' },
+  { slug: 'salesloft', name: 'Salesloft', ats: 'greenhouse' },
 ]
 
 export const maxDuration = 300
@@ -302,7 +287,13 @@ async function scrapeVibeCodeCareers(client: Anthropic, sql: any, results: Resul
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchAshbyJobs(client: Anthropic, sql: any, results: Results) {
-  const ashbyCompanies = TARGET_COMPANIES.filter(c => c.ats === 'ashby')
+  const staticAshby = TARGET_COMPANIES.filter(c => c.ats === 'ashby')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dynamicAshby = await sql`SELECT slug, name FROM ats_companies WHERE ats = 'ashby'`
+  const ashbyCompanies = [
+    ...staticAshby,
+    ...dynamicAshby.map((r: { slug: string; name: string }) => ({ slug: r.slug, name: r.name, ats: 'ashby' as const })),
+  ].filter((c, i, arr) => arr.findIndex(x => x.slug === c.slug) === i)
 
   for (const company of ashbyCompanies) {
     try {
@@ -386,7 +377,13 @@ async function fetchAshbyJobs(client: Anthropic, sql: any, results: Results) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchLeverJobs(client: Anthropic, sql: any, results: Results) {
-  const leverCompanies = TARGET_COMPANIES.filter(c => c.ats === 'lever')
+  const staticLever = TARGET_COMPANIES.filter(c => c.ats === 'lever')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dynamicLever = await sql`SELECT slug, name FROM ats_companies WHERE ats = 'lever'`
+  const leverCompanies = [
+    ...staticLever,
+    ...dynamicLever.map((r: { slug: string; name: string }) => ({ slug: r.slug, name: r.name, ats: 'lever' as const })),
+  ].filter((c, i, arr) => arr.findIndex(x => x.slug === c.slug) === i)
 
   for (const company of leverCompanies) {
     try {
@@ -471,7 +468,13 @@ async function fetchLeverJobs(client: Anthropic, sql: any, results: Results) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchGreenhouseJobs(client: Anthropic, sql: any, results: Results) {
-  const ghCompanies = TARGET_COMPANIES.filter(c => c.ats === 'greenhouse')
+  const staticGH = TARGET_COMPANIES.filter(c => c.ats === 'greenhouse')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dynamicGH = await sql`SELECT slug, name FROM ats_companies WHERE ats = 'greenhouse'`
+  const ghCompanies = [
+    ...staticGH,
+    ...dynamicGH.map((r: { slug: string; name: string }) => ({ slug: r.slug, name: r.name, ats: 'greenhouse' as const })),
+  ].filter((c, i, arr) => arr.findIndex(x => x.slug === c.slug) === i)
 
   for (const company of ghCompanies) {
     try {
@@ -618,6 +621,311 @@ async function fetchAecTechJobsRSS(client: Anthropic, sql: any, results: Results
   }
 }
 
+// ── ATS company discovery ─────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
+  const companyNames: string[] = []
+
+  // Step A: Procore marketplace for AEC company names
+  try {
+    const res = await fetch('https://marketplace.procore.com/apps?category=all', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+    })
+    if (res.ok) {
+      const html = await res.text()
+      Array.from(html.matchAll(/"name"\s*:\s*"([^"]{3,50})"/g)).forEach(match => {
+        const name = match[1].trim()
+        if (name && !name.includes('\\') && /^[A-Za-z]/.test(name)) {
+          companyNames.push(name)
+        }
+      })
+    }
+  } catch (err) {
+    results.errors.push(`Procore discovery error: ${String(err)}`)
+  }
+
+  // Step B: Known AEC-tech and GTM companies to probe
+  const additionalCompanies = [
+    'Dusty Robotics', 'Versatile', 'Constraint', 'Buildots',
+    'Reconstruct', 'Holobuilder', 'Multivista', 'Fieldwire',
+    'PlanGrid', 'Procore', 'Autodesk', 'Bluebeam', 'Newforma',
+    'InEight', 'Kahua', 'Corecon', 'eSUB', 'Projectmates',
+    'Constructive', 'Finalform', 'Trunk Tools', 'Kojo',
+    'Constrafor', 'Billd', 'Levelset', 'Rabbet', 'Honest Buildings',
+    'Northspyre', 'Aquifer', 'Higharc', 'Monograph', 'Forma',
+    'Spacemaker', 'Swapp', 'Archistar', 'TestFit', 'Hypar',
+    'Clari', 'Gong', 'Outreach', 'Salesloft', 'Apollo',
+    'People AI', 'Chorus', 'Jiminny', 'Wingman', 'Refine Labs',
+    'Commsor', 'Common Room', 'Crossbeam', 'Partnerstack',
+    'Reveal', 'Allbound', 'Impartner', 'Channeltivity',
+  ]
+  companyNames.push(...additionalCompanies)
+
+  const uniqueNames = Array.from(new Set(companyNames))
+
+  // Step C: Load already-verified slugs to avoid re-probing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const alreadyVerified = await sql`SELECT slug, ats FROM ats_companies`
+  const verifiedSet = new Set(
+    alreadyVerified.map((r: { slug: string; ats: string }) => `${r.slug}:${r.ats}`)
+  )
+
+  let newDiscoveries = 0
+
+  for (const name of uniqueNames.slice(0, 50)) {
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    const slugCandidates = [
+      baseSlug,
+      baseSlug.replace(/-/g, ''),
+      baseSlug.replace(/-inc$|-llc$|-corp$/, ''),
+      baseSlug.replace(/-ai$/, '') + 'ai',
+      baseSlug + '-inc',
+    ].filter((s, i, arr) => s.length > 1 && arr.indexOf(s) === i)
+
+    for (const slug of slugCandidates) {
+      // Probe Ashby
+      if (!verifiedSet.has(`${slug}:ashby`)) {
+        try {
+          const r = await fetch(
+            `https://api.ashbyhq.com/posting-api/job-board/${slug}`,
+            { signal: AbortSignal.timeout(3000) }
+          )
+          if (r.ok) {
+            await sql`
+              INSERT INTO ats_companies (slug, name, ats)
+              VALUES (${slug}, ${name}, 'ashby')
+              ON CONFLICT (slug, ats) DO UPDATE SET last_checked = NOW()
+            `
+            verifiedSet.add(`${slug}:ashby`)
+            newDiscoveries++
+          }
+        } catch { /* timeout or network error — skip */ }
+      }
+
+      // Probe Lever
+      if (!verifiedSet.has(`${slug}:lever`)) {
+        try {
+          const r = await fetch(
+            `https://api.lever.co/v0/postings/${slug}?mode=json`,
+            { signal: AbortSignal.timeout(3000) }
+          )
+          if (r.ok) {
+            await sql`
+              INSERT INTO ats_companies (slug, name, ats)
+              VALUES (${slug}, ${name}, 'lever')
+              ON CONFLICT (slug, ats) DO UPDATE SET last_checked = NOW()
+            `
+            verifiedSet.add(`${slug}:lever`)
+            newDiscoveries++
+          }
+        } catch { /* timeout or network error — skip */ }
+      }
+
+      // Probe Greenhouse
+      if (!verifiedSet.has(`${slug}:greenhouse`)) {
+        try {
+          const r = await fetch(
+            `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`,
+            { signal: AbortSignal.timeout(3000) }
+          )
+          if (r.ok) {
+            await sql`
+              INSERT INTO ats_companies (slug, name, ats)
+              VALUES (${slug}, ${name}, 'greenhouse')
+              ON CONFLICT (slug, ats) DO UPDATE SET last_checked = NOW()
+            `
+            verifiedSet.add(`${slug}:greenhouse`)
+            newDiscoveries++
+          }
+        } catch { /* timeout or network error — skip */ }
+      }
+
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
+
+  results.errors.push(`ATS discovery: ${newDiscoveries} new companies verified`)
+}
+
+// ── YC Work at a Startup ──────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchYCFallback(client: Anthropic, sql: any, results: Results) {
+  try {
+    const res = await fetch(
+      'https://www.workatastartup.com/jobs?role=operations&remote=only&jobType=fulltime',
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept': 'text/html',
+        },
+      }
+    )
+    if (!res.ok) return
+    const html = await res.text()
+
+    const jobUrls = Array.from(new Set(
+      Array.from(html.matchAll(/href="(\/jobs\/\d+[^"]+)"/g))
+        .map(m => `https://www.workatastartup.com${m[1]}`)
+    )).slice(0, 20)
+
+    results.fetched += jobUrls.length
+    bumpSource(results, 'ycombinator', { fetched: jobUrls.length })
+
+    for (const jobUrl of jobUrls) {
+      const externalId = `yc-${Buffer.from(jobUrl).toString('base64').slice(0, 24)}`
+      const existing = await sql`SELECT id FROM job_leads WHERE external_id = ${externalId}`
+      if (existing.length > 0) continue
+
+      try {
+        const detailRes = await fetch(jobUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; career-bot/1.0)' },
+        })
+        const detailHtml = await detailRes.text()
+
+        const titleMatch =
+          detailHtml.match(/<h1[^>]*>([^<]+)<\/h1>/) ||
+          detailHtml.match(/<meta property="og:title" content="([^"]+)"/)
+        const companyMatch =
+          detailHtml.match(/"company"[^}]*"name"\s*:\s*"([^"]+)"/) ||
+          detailHtml.match(/class="[^"]*company[^"]*"[^>]*>([^<]+)</)
+
+        const title = titleMatch?.[1]?.trim() ?? 'Unknown'
+        const company = companyMatch?.[1]?.trim() ?? 'YC Company'
+
+        const description = detailHtml
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(500, 3500)
+
+        if (description.length < 100) continue
+
+        const scored = await scoreJobWithClaude(
+          client, title, company, 'Remote', description.slice(0, 2000)
+        )
+        if (!scored || scored.score < 60) continue
+        results.scored++
+
+        await sql`
+          INSERT INTO job_leads (
+            external_id, title, company, location,
+            salary_min, salary_max, salary_display,
+            description, url, fit_score, fit_label, fit_summary, source
+          ) VALUES (
+            ${externalId}, ${title}, ${company}, ${'Remote'},
+            ${null}, ${null}, ${null},
+            ${description.slice(0, 5000)}, ${jobUrl},
+            ${scored.score}, ${scored.label}, ${scored.summary},
+            ${'ycombinator'}
+          )
+          ON CONFLICT (external_id) DO NOTHING
+        `
+        results.saved++
+        bumpSource(results, 'ycombinator', { saved: 1 })
+        await new Promise(r => setTimeout(r, 1000))
+      } catch (jobErr) {
+        results.errors.push(`YC job error: ${String(jobErr)}`)
+      }
+    }
+  } catch (err) {
+    results.errors.push(`YC fallback error: ${String(err)}`)
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchYCJobs(client: Anthropic, sql: any, results: Results) {
+  try {
+    const res = await fetch(
+      'https://api.workatastartup.com/companies/search?' +
+      'query=&' +
+      'remote=only&' +
+      'role=operations&' +
+      'jobType=fulltime&' +
+      'companySize=seed,small&' +
+      'industry=Real%20Estate%20and%20Construction,B2B%20Software%20and%20Services',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; career-bot/1.0)',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      }
+    )
+
+    if (!res.ok) {
+      results.errors.push(`YC API returned ${res.status} — trying fallback`)
+      await fetchYCFallback(client, sql, results)
+      return
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as { jobs?: any[]; hits?: any[]; results?: any[] }
+    const jobs = data.jobs ?? data.hits ?? data.results ?? []
+    results.fetched += jobs.length
+    bumpSource(results, 'ycombinator', { fetched: jobs.length })
+
+    if (jobs.length === 0) {
+      // API responded but returned no jobs — run fallback scraper
+      await fetchYCFallback(client, sql, results)
+      return
+    }
+
+    for (const job of jobs) {
+      const title = job.title ?? job.job_title ?? ''
+      const company = job.company_name ?? job.company?.name ?? ''
+      const jobUrl = job.url ?? job.job_url ?? `https://www.workatastartup.com/jobs/${job.id}`
+      const description = (job.description ?? job.job_description ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+
+      if (!title || description.length < 100) continue
+
+      const externalId = `yc-${job.id ?? Buffer.from(jobUrl).toString('base64').slice(0, 24)}`
+      const existing = await sql`SELECT id FROM job_leads WHERE external_id = ${externalId}`
+      if (existing.length > 0) continue
+
+      const scored = await scoreJobWithClaude(
+        client, title, company, 'Remote', description.slice(0, 2000)
+      )
+      if (!scored || scored.score < 60) continue
+      results.scored++
+
+      await sql`
+        INSERT INTO job_leads (
+          external_id, title, company, location,
+          salary_min, salary_max, salary_display,
+          description, url, fit_score, fit_label, fit_summary, source
+        ) VALUES (
+          ${externalId}, ${title}, ${company}, ${'Remote'},
+          ${null}, ${null}, ${null},
+          ${description.slice(0, 5000)}, ${jobUrl},
+          ${scored.score}, ${scored.label}, ${scored.summary},
+          ${'ycombinator'}
+        )
+        ON CONFLICT (external_id) DO NOTHING
+      `
+      results.saved++
+      bumpSource(results, 'ycombinator', { saved: 1 })
+      await new Promise(r => setTimeout(r, 500))
+    }
+  } catch (err) {
+    results.errors.push(`YC scraper error: ${String(err)}`)
+    await fetchYCFallback(client, sql, results)
+  }
+}
+
 // ── GET handler ───────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -720,9 +1028,17 @@ export async function GET(request: NextRequest) {
   // ── Additional sources ──────────────────────────────────────────────────────
 
   await scrapeVibeCodeCareers(client, sql, results)
+
+  // Discover new ATS companies from Procore + known list, then poll all verified companies
+  await discoverAndVerifyATSCompanies(sql, results)
   await fetchAshbyJobs(client, sql, results)
   await fetchLeverJobs(client, sql, results)
   await fetchGreenhouseJobs(client, sql, results)
+
+  // YC Work at a Startup
+  await fetchYCJobs(client, sql, results)
+
+  // AEC Tech Jobs RSS
   await fetchAecTechJobsRSS(client, sql, results)
 
   return Response.json({ success: true, ...results })
