@@ -33,7 +33,7 @@ function sectionLabel(text: string): Paragraph {
         color: COPPER,
         size: 18,
         allCaps: true,
-        characterSpacing: 40,
+        characterSpacing: 80,
       }),
     ],
   })
@@ -77,6 +77,7 @@ interface ExperienceEntry {
   company: string
   title: string
   dates: string
+  intro?: string
   bullets: string[]
 }
 
@@ -149,13 +150,23 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
   if (resume.targetTitle) {
     children.push(
       new Paragraph({
-        spacing: { after: 60 },
+        spacing: { after: 40 },
         children: [
           new TextRun({ text: resume.targetTitle, size: 22, color: GRAY, font: 'Calibri' }),
         ],
       })
     )
   }
+
+  // URL line — 10pt gray
+  children.push(
+    new Paragraph({
+      spacing: { after: 40 },
+      children: [
+        new TextRun({ text: 'tanobuild.com', size: 20, color: '666666', font: 'Calibri' }),
+      ],
+    })
+  )
 
   // Contact line with thin bottom rule
   children.push(
@@ -181,7 +192,7 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
 
   const METRICS = [
     { number: '$75M+',  line1: 'Capital Programs Managed', line2: 'Simultaneously'       },
-    { number: '16x',    line1: 'Account Expansion',        line2: '(Land & Expand)'      },
+    { number: '16\u00d7',  line1: 'Account Expansion',        line2: '(Land & Expand)'      },
     { number: '13 Yrs', line1: 'Enterprise Relationship',  line2: 'Cycles'               },
     { number: '100%',   line1: 'Revenue Retained in',      line2: 'Volatile Deals'       },
   ]
@@ -345,6 +356,18 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
       })
     )
 
+    // Intro paragraph — optional italic scope sentence
+    if (exp.intro) {
+      children.push(
+        new Paragraph({
+          spacing: { after: 120, line: 276 },
+          children: [
+            new TextRun({ text: exp.intro, italics: true, size: 20, color: '666666', font: 'Calibri' }),
+          ],
+        })
+      )
+    }
+
     const bullets = exp.bullets ?? []
 
     if (bullets.length >= 6) {
@@ -388,7 +411,7 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
         // Sub-header: copper, small caps, letter-spaced, no border
         children.push(
           new Paragraph({
-            spacing: { before: 100, after: 40 },
+            spacing: { before: 180, after: 80 },
             children: [
               new TextRun({
                 text: group.label,

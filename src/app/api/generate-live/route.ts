@@ -144,6 +144,7 @@ When assessing role fit:
         "company": "<company name>",
         "title": "<job title>",
         "dates": "<date range>",
+        "intro": "<single sentence under 30 words describing the overall scope of the role>",
         "bullets": [
           "<achievement bullet — specific, quantified where possible>",
           "<achievement bullet>",
@@ -176,6 +177,7 @@ CRITICAL RESUME RULES:
 - Never mention BizBox in any output. If referencing self-built applications, use TanoBox or tanobuild.com only.
 - Never include product names (TanoBox, BizBox, SATS, APEX, tanobuild.com) in the skills array. Skills must be capabilities only, not product names.
 - Never reference SATS or the trading system by its name in resume bullets. Describe it as "autonomous multi-agent AI system" or "13-container Docker AI stack" without naming it.
+- Every experience entry MUST include an "intro" field: a single sentence (under 30 words) describing the overall scope of the role, placed before the bullets. For the Partner 2020-2025 entry, describe the de facto CRO and operational architect scope. For Project Architect and Project Manager, describe the project delivery scope.
 
 Requirements:
 - Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
