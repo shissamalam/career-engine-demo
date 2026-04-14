@@ -158,23 +158,10 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
     )
   }
 
-  // URL line — 10pt gray
-  children.push(
-    new Paragraph({
-      spacing: { after: 40 },
-      children: [
-        new TextRun({ text: 'tanobuild.com', size: 20, color: '666666', font: 'Calibri' }),
-      ],
-    })
-  )
-
-  // Contact line with thin bottom rule
+  // Contact line
   children.push(
     new Paragraph({
       spacing: { after: 0 },
-      border: {
-        bottom: { color: 'DDDDDD', space: 6, style: BorderStyle.SINGLE, size: 4 },
-      },
       children: [
         new TextRun({
           text: 'sjmanning@gmail.com  |  360-261-1531  |  linkedin.com/in/sjmanningtx  |  Austin, TX',
@@ -182,6 +169,19 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
           color: GRAY,
           font: 'Calibri',
         }),
+      ],
+    })
+  )
+
+  // URL line with thin bottom rule
+  children.push(
+    new Paragraph({
+      spacing: { after: 0 },
+      border: {
+        bottom: { color: 'DDDDDD', space: 6, style: BorderStyle.SINGLE, size: 4 },
+      },
+      children: [
+        new TextRun({ text: 'tanobuild.com', size: 18, color: GRAY, font: 'Calibri' }),
       ],
     })
   )
@@ -456,7 +456,7 @@ async function buildResumeBuffer(resume: ResumeData): Promise<Buffer> {
 
   // ── EDUCATION & CREDENTIALS ───────────────────────────────────────────────────
 
-  children.push(sectionLabel('Education & Credentials'))
+  children.push(sectionLabel('Education and Credentials'))
   children.push(
     new Paragraph({
       spacing: { before: 100, after: 0 },
