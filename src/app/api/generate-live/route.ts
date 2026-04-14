@@ -165,12 +165,15 @@ CRITICAL RESUME RULES:
 - Maximum 2 pages when rendered as a Word document
 - Use exact dates: Partner 2020-2025, Project Architect 2014-2020, Project Manager 2011-2014, Project Designer 2010-2011 (only if fits)
 - Use exact contact: sjmanning@gmail.com, 360-261-1531, linkedin.com/in/sjmanningtx, Austin TX
-- Include FMVA certification in education: "M.Arch + B.S. Architecture, Washington State University | FMVA (CFI, in progress)"
+- Include FMVA certification in education: "M.Arch + B.S. Architecture, Washington State University | FMVA (CFI, April 2026)"
 - Include the 16x expansion ($80K to $1.3M+) and $75M+ numbers in Partner role bullets
 - Include the deal preservation story ($35M to $69M restructured to $40M, preserved $1.6M) if space permits
 - If content does not fit 2 pages, cut Project Designer first, then abbreviate Project Manager, never cut the numbers
 - Location is always Austin TX, never Georgetown TX
-- Include AI Systems Developer (2024-Present) as a separate experience entry
+- Do NOT include a separate "AI Systems Developer" or "Tano Architecture" experience entry. All AI and systems-building work should be woven into bullets within the Clayton Korte Partner role (2020-2025) where relevant.
+- Company name is always "Clayton Korte" for all experience entries. Never use "Tano Architecture" or "Tano Studio".
+- Never use em dashes (—) anywhere in the resume or cover letter. Use commas, colons, or rewrite the sentence instead.
+- Never mention BizBox in any output. If referencing self-built applications, use TanoBox or tanobuild.com only.
 
 Requirements:
 - Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
