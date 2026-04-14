@@ -676,7 +676,7 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
 
   let newDiscoveries = 0
 
-  for (const name of uniqueNames.slice(0, 50)) {
+  for (const name of uniqueNames.slice(0, 20)) {
     const baseSlug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -696,7 +696,7 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
         try {
           const r = await fetch(
             `https://api.ashbyhq.com/posting-api/job-board/${slug}`,
-            { signal: AbortSignal.timeout(3000) }
+            { signal: AbortSignal.timeout(1500) }
           )
           if (r.ok) {
             await sql`
@@ -715,7 +715,7 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
         try {
           const r = await fetch(
             `https://api.lever.co/v0/postings/${slug}?mode=json`,
-            { signal: AbortSignal.timeout(3000) }
+            { signal: AbortSignal.timeout(1500) }
           )
           if (r.ok) {
             await sql`
@@ -734,7 +734,7 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
         try {
           const r = await fetch(
             `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`,
-            { signal: AbortSignal.timeout(3000) }
+            { signal: AbortSignal.timeout(1500) }
           )
           if (r.ok) {
             await sql`
@@ -748,7 +748,6 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
         } catch { /* timeout or network error — skip */ }
       }
 
-      await new Promise(r => setTimeout(r, 100))
     }
   }
 
@@ -775,7 +774,7 @@ async function fetchYCFallback(client: Anthropic, sql: any, results: Results) {
     const jobUrls = Array.from(new Set(
       Array.from(html.matchAll(/href="(\/jobs\/\d+[^"]+)"/g))
         .map(m => `https://www.workatastartup.com${m[1]}`)
-    )).slice(0, 20)
+    )).slice(0, 10)
 
     results.fetched += jobUrls.length
     bumpSource(results, 'ycombinator', { fetched: jobUrls.length })
