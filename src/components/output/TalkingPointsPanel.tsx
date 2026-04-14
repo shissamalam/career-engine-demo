@@ -7,6 +7,14 @@ interface TalkingPoint {
 }
 
 export default function TalkingPointsPanel({ points }: { points: TalkingPoint[] }) {
+  if (!points || points.length === 0) {
+    return (
+      <div style={{ padding: '40px 0', fontSize: '14px', color: '#4A4846', fontFamily: 'IBM Plex Mono, monospace' }}>
+        No talking points available.
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
       {points.map((point, i) => (

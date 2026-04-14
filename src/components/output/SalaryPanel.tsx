@@ -9,6 +9,14 @@ interface SalaryData {
 }
 
 export default function SalaryPanel({ data }: { data: SalaryData }) {
+  if (!data) {
+    return (
+      <div style={{ padding: '40px 0', fontSize: '14px', color: '#4A4846', fontFamily: 'IBM Plex Mono, monospace' }}>
+        No salary data available.
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Range block */}
@@ -85,7 +93,7 @@ export default function SalaryPanel({ data }: { data: SalaryData }) {
           Negotiation notes
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {data.negotiationNotes.map((note, i) => (
+          {(data.negotiationNotes ?? []).map((note, i) => (
             <div key={i} style={{ display: 'flex', gap: '12px' }}>
               <span style={{
                 fontFamily: 'IBM Plex Mono, monospace',
@@ -105,7 +113,7 @@ export default function SalaryPanel({ data }: { data: SalaryData }) {
       </div>
 
       {/* Red flags */}
-      {data.redFlags.length > 0 && (
+      {(data.redFlags ?? []).length > 0 && (
         <div>
           <div style={{
             fontFamily: 'IBM Plex Mono, monospace',
@@ -118,7 +126,7 @@ export default function SalaryPanel({ data }: { data: SalaryData }) {
             Red flags to watch
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {data.redFlags.map((flag, i) => (
+            {(data.redFlags ?? []).map((flag, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <span style={{
                   width: '6px',

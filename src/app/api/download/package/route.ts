@@ -344,7 +344,7 @@ function buildRoleFitText(companyName: string, roleFit: RoleFitData): string {
     '---------',
   ]
 
-  for (const s of roleFit.strengths) {
+  for (const s of (roleFit.strengths ?? [])) {
     lines.push(s.title)
     lines.push(s.detail)
     lines.push('')
@@ -353,7 +353,7 @@ function buildRoleFitText(companyName: string, roleFit: RoleFitData): string {
   lines.push('AREAS TO ADDRESS')
   lines.push('----------------')
 
-  for (const g of roleFit.gaps) {
+  for (const g of (roleFit.gaps ?? [])) {
     lines.push(`${g.title} (${g.severity})`)
     lines.push(g.detail)
     lines.push('')
@@ -384,7 +384,7 @@ function buildSalaryText(companyName: string, salary: SalaryData): string {
     '-----------------',
   ]
 
-  salary.negotiationNotes.forEach((note, i) => {
+  ;(salary.negotiationNotes ?? []).forEach((note, i) => {
     lines.push(`${String(i + 1).padStart(2, '0')}. ${note}`)
   })
 
@@ -392,7 +392,7 @@ function buildSalaryText(companyName: string, salary: SalaryData): string {
   lines.push('RED FLAGS')
   lines.push('---------')
 
-  for (const flag of salary.redFlags) {
+  for (const flag of (salary.redFlags ?? [])) {
     lines.push(`- ${flag}`)
   }
 
@@ -407,7 +407,7 @@ function buildInterviewText(companyName: string, talkingPoints: TalkingPoint[]):
     '',
   ]
 
-  for (const tp of talkingPoints) {
+  for (const tp of (talkingPoints ?? [])) {
     lines.push(`Q: ${tp.question}`)
     lines.push('')
     lines.push('YOUR APPROACH')
@@ -452,37 +452,45 @@ export async function POST(request: Request) {
 
   const company = companyName || 'company'
 
-  // Build all 6 files concurrently where possible
-  const [resumeBuffer, coverLetterBuffer] = await Promise.all([
-    buildResumeBuffer(resume),
-    buildCoverLetterBuffer(coverLetter, company),
-  ])
+  try {
+    // Build all 6 files concurrently where possible
+    const [resumeBuffer, coverLetterBuffer] = await Promise.all([
+      buildResumeBuffer(resume),
+      buildCoverLetterBuffer(coverLetter, company),
+    ])
 
-  const jobDescText = buildJobDescText(company, jobPosting)
-  const roleFitText = buildRoleFitText(company, roleFit)
-  const salaryText = buildSalaryText(company, salaryBrief)
-  const interviewText = buildInterviewText(company, talkingPoints)
+    const jobDescText = buildJobDescText(company, jobPosting)
+    const roleFitText = buildRoleFitText(company, roleFit)
+    const salaryText = buildSalaryText(company, salaryBrief)
+    const interviewText = buildInterviewText(company, talkingPoints)
 
-  const folderName = company
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    const folderName = company
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
 
-  const zip = new JSZip()
-  zip.file('00-job-description.txt', jobDescText)
-  zip.file('01-role-fit.txt', roleFitText)
-  zip.file('02-salary-brief.txt', salaryText)
-  zip.file('03-interview-prep.txt', interviewText)
-  zip.file('04-resume.docx', resumeBuffer)
-  zip.file('05-cover-letter.docx', coverLetterBuffer)
+    const zip = new JSZip()
+    zip.file('00-job-description.txt', jobDescText)
+    zip.file('01-role-fit.txt', roleFitText)
+    zip.file('02-salary-brief.txt', salaryText)
+    zip.file('03-interview-prep.txt', interviewText)
+    zip.file('04-resume.docx', resumeBuffer)
+    zip.file('05-cover-letter.docx', coverLetterBuffer)
 
-  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
 
-  return new Response(new Uint8Array(zipBuffer), {
-    headers: {
-      'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="sam-manning-${folderName}-package.zip"`,
-    },
-  })
+    return new Response(new Uint8Array(zipBuffer), {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="sam-manning-${folderName}-package.zip"`,
+      },
+    })
+  } catch (err) {
+    console.error('[download/package] handler error:', err)
+    return Response.json(
+      { error: err instanceof Error ? err.message : 'Package build failed' },
+      { status: 500 }
+    )
+  }
 }
