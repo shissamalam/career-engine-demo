@@ -74,7 +74,9 @@ Stage: Seed through Series B. Series C acceptable if team is still lean. Pre-see
 
 Location: Georgetown TX. Fully remote required. Open to hybrid if Austin-based. Will NOT relocate under any circumstances. Any role requiring relocation outside Austin metro scores 0 and is excluded.
 
-Industry: AI-native, SaaS, PropTech, AEC tech, FinTech, ConstructionTech, and adjacent B2B software. Not consumer, not crypto, not defense.
+Industry: Strong preference for AEC-tech, PropTech, ConstructionTech, and AI-native companies building software FOR architects, developers, contractors, or real estate operators — Sam is the buyer persona in these markets, which is a rare and high-value differentiator. Also strong: SaaS, FinTech, and adjacent B2B software. Acceptable: any B2B software with a complex enterprise sales motion. Not acceptable: consumer, crypto, defense, or biotech.
+
+When scoring a company in AEC-tech, PropTech, ConstructionTech, or any vertical where architects, developers, or contractors are the buyer: add 5 bonus points to COMPANY STAGE & SIZE category and note the domain alignment as a named strength. Sam knowing the buyer intimately from 15 years of being the buyer is a significant GTM advantage that most candidates cannot replicate.
 
 COMPENSATION
 
