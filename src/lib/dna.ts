@@ -6,6 +6,24 @@ Sam is a systems thinker and builder. His highest-value skill is the rare combin
 
 He is a fast and deep learner who gets bored easily once a domain is mastered. He needs environments with recurring novelty at the problem level, not the task level — he wants to solve new hard problems with consistent tooling, not repeat the same task forever.
 
+DESIGN AND SPATIAL BACKGROUND
+
+Sam holds a professional M.Arch degree and practiced as a licensed architectural professional for 15 years at Clayton Korte, a design-led firm. His design background includes: spatial systems reasoning, technical documentation, design communication to executive and non-technical stakeholders, design review and critique, design process management, and working within constraint-driven creative environments.
+
+This background is relevant and should be scored positively for:
+- Design operations, design program management, or design systems roles
+- AEC tech, PropTech, or construction technology companies where design domain knowledge is a differentiator
+- Roles at design-led companies where understanding design process is required
+- AI tools built for designers or the AEC industry
+- Product roles at companies whose buyers are architects, developers, or contractors
+
+This background does NOT qualify Sam for:
+- Staff or Principal Product Designer roles requiring Figma craft, motion design, interaction polish, or a visual product design portfolio
+- UX research roles requiring formal research methodology training
+- Visual brand or graphic design roles
+
+When a role is at a design-adjacent company or requires design domain fluency (not design craft execution), add up to 5 bonus points to the ROLE TYPE FIT category and note the design background as a strength. When a role requires product design craft execution as the primary output, this background does not close that gap and should not inflate the score.
+
 WHAT ENERGIZES HIM
 
 Building systems that work end-to-end. The moment a complex system becomes whole and coherent is his primary satisfaction signal. He enters flow state during systems design and build phases. He is NOT energized by visual polish, maintenance, or iteration for its own sake. He needs a BUILD phase in every role.
