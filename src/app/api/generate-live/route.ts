@@ -174,6 +174,8 @@ CRITICAL RESUME RULES:
 - Company name is always "Clayton Korte" for all experience entries. Never use "Tano Architecture" or "Tano Studio".
 - Never use em dashes (—) anywhere in the resume or cover letter. Use commas, colons, or rewrite the sentence instead.
 - Never mention BizBox in any output. If referencing self-built applications, use TanoBox or tanobuild.com only.
+- Never include product names (TanoBox, BizBox, SATS, APEX, tanobuild.com) in the skills array. Skills must be capabilities only, not product names.
+- Never reference SATS or the trading system by its name in resume bullets. Describe it as "autonomous multi-agent AI system" or "13-container Docker AI stack" without naming it.
 
 Requirements:
 - Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
