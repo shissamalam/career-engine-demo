@@ -676,7 +676,7 @@ async function discoverAndVerifyATSCompanies(sql: any, results: Results) {
 
   let newDiscoveries = 0
 
-  for (const name of uniqueNames.slice(0, 20)) {
+  for (const name of uniqueNames.slice(0, 15)) {
     const baseSlug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -774,7 +774,7 @@ async function fetchYCFallback(client: Anthropic, sql: any, results: Results) {
     const jobUrls = Array.from(new Set(
       Array.from(html.matchAll(/href="(\/jobs\/\d+[^"]+)"/g))
         .map(m => `https://www.workatastartup.com${m[1]}`)
-    )).slice(0, 10)
+    )).slice(0, 8)
 
     results.fetched += jobUrls.length
     bumpSource(results, 'ycombinator', { fetched: jobUrls.length })
@@ -832,7 +832,7 @@ async function fetchYCFallback(client: Anthropic, sql: any, results: Results) {
         `
         results.saved++
         bumpSource(results, 'ycombinator', { saved: 1 })
-        await new Promise(r => setTimeout(r, 1000))
+        await new Promise(r => setTimeout(r, 500))
       } catch (jobErr) {
         results.errors.push(`YC job error: ${String(jobErr)}`)
       }
