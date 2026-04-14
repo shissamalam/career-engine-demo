@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from 'docx'
+import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 
 const BLACK = '000000'
 
@@ -8,7 +8,7 @@ interface CoverLetterData {
   close: string
 }
 
-function para(text: string, opts: {
+function clPara(text: string, opts: {
   bold?: boolean
   align?: (typeof AlignmentType)[keyof typeof AlignmentType]
   spacingAfter?: number
@@ -16,18 +16,9 @@ function para(text: string, opts: {
 } = {}): Paragraph {
   return new Paragraph({
     alignment: opts.align,
-    spacing: {
-      after: opts.spacingAfter ?? 0,
-      line: opts.lineSpacing,
-    },
+    spacing: { after: opts.spacingAfter ?? 0, line: opts.lineSpacing },
     children: [
-      new TextRun({
-        text,
-        bold: opts.bold,
-        size: 20,
-        color: BLACK,
-        font: 'Calibri',
-      }),
+      new TextRun({ text, bold: opts.bold, size: 20, color: BLACK, font: 'Calibri' }),
     ],
   })
 }
@@ -38,6 +29,43 @@ function blank(): Paragraph {
     children: [new TextRun({ text: '', size: 20, font: 'Calibri' })],
   })
 }
+
+async function buildCoverLetterBuffer(coverLetter: CoverLetterData, companyName: string): Promise<Buffer> {
+  const today = new Date()
+  const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  const children: Paragraph[] = [
+    clPara(dateStr, { align: AlignmentType.RIGHT }),
+    blank(),
+    clPara('Hiring Team'),
+    clPara(companyName, { bold: true }),
+    blank(),
+    clPara('Dear Hiring Team,'),
+    blank(),
+    clPara(coverLetter.opening, { lineSpacing: 336 }),
+    blank(),
+    clPara(coverLetter.body, { lineSpacing: 336 }),
+    blank(),
+    clPara(coverLetter.close, { lineSpacing: 336 }),
+    blank(),
+    clPara('Sincerely,'),
+    blank(),
+    clPara('Sam Manning', { bold: true }),
+    clPara('sjmanning@gmail.com'),
+    clPara('360-261-1531'),
+  ]
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: { margin: { top: 720, bottom: 720, left: 864, right: 864 } } },
+      children,
+    }],
+  })
+
+  return Packer.toBuffer(doc)
+}
+
+// ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const token = request.headers.get('X-Live-Token')
@@ -55,59 +83,20 @@ export async function POST(request: Request) {
     return Response.json({ error: 'No cover letter data' }, { status: 400 })
   }
 
-  const today = new Date(2026, 3, 6) // April 6, 2026
-  const dateStr = today.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  try {
+    const buffer = await buildCoverLetterBuffer(coverLetter, companyName || 'company')
 
-  const children: Paragraph[] = [
-    para(dateStr, { align: AlignmentType.RIGHT }),
-    blank(),
-    para('Hiring Team'),
-    companyName ? para(companyName, { bold: true }) : blank(),
-    blank(),
-    para('Dear Hiring Team,'),
-    blank(),
-    para(coverLetter.opening, { lineSpacing: 336, spacingAfter: 0 }),
-    blank(),
-    para(coverLetter.body, { lineSpacing: 336, spacingAfter: 0 }),
-    blank(),
-    para(coverLetter.close, { lineSpacing: 336, spacingAfter: 0 }),
-    blank(),
-    para('Sincerely,'),
-    blank(),
-    para('Sam Manning', { bold: true }),
-    para('sjmanning@gmail.com'),
-    para('360-261-1531'),
-  ]
-
-  const doc = new Document({
-    sections: [
-      {
-        properties: {
-          page: {
-            margin: {
-              top: 720,
-              bottom: 720,
-              left: 864,
-              right: 864,
-            },
-          },
-        },
-        children,
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': 'attachment; filename="sam-manning-cover-letter.docx"',
       },
-    ],
-  })
-
-  const buffer = await Packer.toBuffer(doc)
-  const uint8 = new Uint8Array(buffer)
-
-  return new Response(uint8, {
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': 'attachment; filename="sam-manning-cover-letter.docx"',
-    },
-  })
+    })
+  } catch (err) {
+    console.error('[download/coverletter] error:', err)
+    return Response.json(
+      { error: err instanceof Error ? err.message : 'Cover letter build failed' },
+      { status: 500 }
+    )
+  }
 }
