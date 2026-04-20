@@ -54,6 +54,8 @@ Founding PM / Product Operations — zero-to-one product or ops infrastructure a
 
 AI Vibe Coding / Prompt Engineering — roles where the job is building with AI tools. Application layer, not model layer.
 
+People Operations / HR Systems — roles focused on building or improving operational infrastructure for people programs: performance management systems, HRIS implementation, onboarding workflows, compensation analytics, or HR data pipelines. Must involve systems design and build ownership, not policy administration or generalist HR. Score this category the same as Business Operations when the role is systems-building in nature.
+
 DISQUALIFYING ROLE TYPES — score these LOW or reject
 
 Sales, Business Development, Account Executive — relationship-cultivation as primary output.
@@ -98,6 +100,14 @@ Full-stack web applications: TanoBox (financial modeling SaaS demo), BizBox, tan
 15 years architecture leadership including Partner-level P&L ownership, enterprise client management ($80K→$1.3M+ account expansion, 16x), and operational systems design across $75M+ capital programs.
 
 FMVA certification (April 2026).
+
+PEOPLE OPERATIONS AND HR SYSTEMS
+
+Designed and built a weighted employee performance scoring system at Clayton Korte covering billable hours, non-billable hours, total hours, PTO utilization (unlimited PTO policy), revenue generated, profit generated, hourly revenue efficiency (actual vs. straight-hourly comparison), technical ability ratings, and peer review scores. Scores were calibrated by job title using a weighted average model specific to each role level, and outputs fed directly into end-of-year bonus allocation decisions.
+
+Implemented automated employee onboarding workflows in Paycor in collaboration with the payroll and accounting team. Designed the task sequencing, assignment logic, and staged delivery structure for the first-week onboarding experience. This was an operational systems implementation project, not a configuration task.
+
+When a role mentions performance management systems, HRIS implementation or configuration, onboarding automation, compensation analytics, HR data infrastructure, or people operations systems: surface both entries above as named differentiators in scoring, and note that Sam has built production-grade people ops infrastructure with real data pipelines and decision-output consequences — not administered existing systems.
 
 SCORING INSTRUCTION
 
