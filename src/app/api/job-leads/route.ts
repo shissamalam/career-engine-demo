@@ -1,0 +1,213 @@
+import { NextRequest } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+import { getDb, initDb } from '@/lib/db'
+import { DNA_PROMPT } from '@/lib/dna'
+import { scrapeAllTargets, type JobLead } from '@/lib/jobLeadsScraper'
+
+export const maxDuration = 300
+
+// ── Scoring ───────────────────────────────────────────────────────────────────
+
+const CURATED_SCORING_PROMPT = `You are scoring a job posting for Sam Manning.
+
+STEP 1 — LOCATION GATE:
+Is this role on-site AND located outside the Austin, TX metro area AND does it not
+explicitly state remote work is available?
+If YES to all three: output {"score": 0, "label": "Excluded - relocation required",
+"summary": "Role requires relocation outside Austin TX. Hard filter applied."} and stop.
+
+STEP 2 — Score 0-100 using this rubric:
+- Role type fit (30 pts): GTM Ops/RevOps/BizOps/AI Implementation with build = 25-30. Chief of Staff/ops-heavy = 15-24. Mixed sales = 5-14. AE/BD/SWE/pure PM = 0-4.
+- Company stage & size (20 pts): Seed/Series A sub-50 = 17-20. Series B 50-100 = 12-16. 100-200 = 6-11. 200+ or enterprise = 0-5.
+- Remote/location (15 pts): Fully remote = 15. Austin hybrid within 35 miles of Georgetown TX = 12. Austin unclear policy = 6. Relocation or 5-day in-office = 0.
+- Compensation signal (15 pts): $180K+ stated = 13-15. $150-180K = 9-12. $120-150K with equity = 4-8. Below $120K = 0-3.
+- Build ownership (10 pts): Owns building from zero = 9-10. Significant build component = 6-8. Some tooling = 3-5. Advisory/management only = 0-2.
+- Team caliber (5 pts): YC/tier-1/technical founders = 5. Experienced with traction = 3-4. Unknown founders = 1-2. Red flags = 0.
+
+Return ONLY a JSON object, no markdown, no preamble:
+{"score": <integer 0-100>, "label": "<Poor match|Partial match|Good match|Strong match|Exceptional match|Excluded - relocation required>", "summary": "<one sentence>"}`
+
+async function scoreJob(
+  client: Anthropic,
+  title: string,
+  company: string,
+  location: string,
+  description: string,
+): Promise<{ score: number; label: string; summary: string } | null> {
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      system: DNA_PROMPT,
+      messages: [{
+        role: 'user',
+        content: `${CURATED_SCORING_PROMPT}
+
+JOB TITLE: ${title}
+COMPANY: ${company}
+LOCATION: ${location}
+DESCRIPTION: ${description.slice(0, 2_000)}`,
+      }],
+    })
+    const content = msg.content[0]
+    if (content.type !== 'text') return null
+    const raw = content.text.trim()
+    const start = raw.indexOf('{')
+    const end   = raw.lastIndexOf('}')
+    if (start === -1 || end <= start) return null
+    const parsed = JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>
+    return {
+      score:   typeof parsed.score   === 'number' ? parsed.score   : 0,
+      label:   typeof parsed.label   === 'string' ? parsed.label   : 'Unknown',
+      summary: typeof parsed.summary === 'string' ? parsed.summary : '',
+    }
+  } catch {
+    return null
+  }
+}
+
+// ── DB helpers ────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function upsertLead(sql: ReturnType<typeof import('@/lib/db')['getDb']>, lead: JobLead, scored: { score: number; label: string; summary: string } | null) {
+  await sql`
+    INSERT INTO job_leads (
+      external_id, title, company, location,
+      salary_min, salary_max, salary_display,
+      description, url, source, status, date_found,
+      fit_score, fit_label, fit_summary,
+      location_unverified, requires_manual_review
+    ) VALUES (
+      ${lead.externalId}, ${lead.title}, ${lead.company}, ${lead.location},
+      ${null}, ${null}, ${null},
+      ${lead.description || null}, ${lead.applyUrl}, ${lead.source}, 'new', NOW(),
+      ${scored?.score ?? null}, ${scored?.label ?? null}, ${scored?.summary ?? null},
+      ${lead.locationUnverified}, ${lead.requiresManualReview}
+    )
+    ON CONFLICT (external_id) DO UPDATE SET
+      title                 = EXCLUDED.title,
+      location              = EXCLUDED.location,
+      description           = EXCLUDED.description,
+      date_found            = EXCLUDED.date_found,
+      fit_score             = COALESCE(EXCLUDED.fit_score, job_leads.fit_score),
+      fit_label             = COALESCE(EXCLUDED.fit_label, job_leads.fit_label),
+      fit_summary           = COALESCE(EXCLUDED.fit_summary, job_leads.fit_summary),
+      location_unverified   = EXCLUDED.location_unverified,
+      requires_manual_review = EXCLUDED.requires_manual_review
+  `
+}
+
+// ── Shared refresh logic ──────────────────────────────────────────────────────
+
+async function runRefresh(isCron = false): Promise<Response> {
+  await initDb()
+  const sql    = getDb()
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+  const { leads, errors } = await scrapeAllTargets()
+  let scored  = 0
+  let stored  = 0
+  let skipped = 0
+
+  for (const lead of leads) {
+    // Skip scoring placeholder entries
+    const isPlaceholder = lead.title === 'Check careers page manually' ||
+                          lead.title.startsWith('Check via') ||
+                          lead.title.startsWith('Scrape failed')
+
+    let scoreResult = null
+    if (!isPlaceholder && process.env.ANTHROPIC_API_KEY) {
+      scoreResult = await scoreJob(client, lead.title, lead.company, lead.location, lead.description)
+      if (scoreResult) scored++
+    } else {
+      skipped++
+    }
+
+    try {
+      await upsertLead(sql, lead, scoreResult)
+      stored++
+    } catch (err) {
+      errors.push(`DB upsert failed for ${lead.externalId}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+
+    // Polite delay between Claude calls
+    if (!isPlaceholder && scoreResult) {
+      await new Promise(r => setTimeout(r, 500))
+    }
+  }
+
+  return Response.json({
+    success: true,
+    cron: isCron,
+    scraped: leads.length,
+    scored,
+    stored,
+    skipped,
+    errors,
+  })
+}
+
+// ── GET — return stored curated leads, or trigger cron scrape ─────────────────
+
+export async function GET(request: NextRequest) {
+  // Vercel cron authentication
+  const authHeader = request.headers.get('authorization')
+  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) {
+    return runRefresh(true)
+  }
+
+  // Manual view — requires LIVE_MODE_TOKEN
+  const token = request.headers.get('X-Live-Token')
+  if (token !== process.env.LIVE_MODE_TOKEN) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  await initDb()
+  const sql = getDb()
+
+  const leads = await sql`
+    SELECT
+      id, external_id, title, company, location,
+      url, fit_score, fit_label, fit_summary,
+      date_found, status, source, description,
+      location_unverified, requires_manual_review
+    FROM job_leads
+    WHERE source = 'target-ashby'
+       OR source = 'target-greenhouse'
+       OR source = 'target-custom'
+    ORDER BY
+      fit_score DESC NULLS LAST,
+      date_found DESC
+    LIMIT 200
+  `
+
+  return Response.json({ leads })
+}
+
+// ── POST — manual refresh triggered from the UI ───────────────────────────────
+
+export async function POST(request: NextRequest) {
+  const token = request.headers.get('X-Live-Token')
+  if (token !== process.env.LIVE_MODE_TOKEN) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json() as { refresh?: boolean }
+    if (!body.refresh) {
+      return Response.json({ error: 'Pass { refresh: true } to trigger a scrape' }, { status: 400 })
+    }
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  try {
+    return await runRefresh(false)
+  } catch (error) {
+    console.error('job-leads refresh error:', error)
+    return Response.json(
+      { error: 'Refresh failed', detail: error instanceof Error ? error.message : String(error) },
+      { status: 500 },
+    )
+  }
+}

@@ -17,6 +17,24 @@ interface Job {
   description: string
 }
 
+interface CuratedLead {
+  id: number
+  external_id: string
+  title: string
+  company: string
+  location: string | null
+  url: string
+  fit_score: number | null
+  fit_label: string | null
+  fit_summary: string | null
+  date_found: string
+  status: string
+  source: string
+  description: string | null
+  location_unverified: boolean | null
+  requires_manual_review: boolean | null
+}
+
 export default function JobsPage() {
   const [token, setToken] = useState('')
   const [tokenInput, setTokenInput] = useState('')
@@ -24,6 +42,10 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [curatedLeads, setCuratedLeads] = useState<CuratedLead[]>([])
+  const [curatedLoading, setCuratedLoading] = useState(false)
+  const [curatedError, setCuratedError] = useState('')
+  const [curatedRefreshing, setCuratedRefreshing] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -35,7 +57,10 @@ export default function JobsPage() {
   }, [])
 
   useEffect(() => {
-    if (authenticated && token) fetchJobs()
+    if (authenticated && token) {
+      fetchJobs()
+      fetchCuratedLeads()
+    }
   }, [authenticated, token])
 
   async function handleAuth() {
@@ -73,6 +98,47 @@ export default function JobsPage() {
       setError('Failed to load jobs')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchCuratedLeads() {
+    setCuratedLoading(true)
+    setCuratedError('')
+    try {
+      const res = await fetch('/api/job-leads', {
+        headers: { 'X-Live-Token': token }
+      })
+      const data = await res.json() as { leads?: CuratedLead[] }
+      setCuratedLeads(data.leads || [])
+    } catch {
+      setCuratedError('Failed to load curated leads')
+    } finally {
+      setCuratedLoading(false)
+    }
+  }
+
+  async function refreshCuratedLeads() {
+    setCuratedRefreshing(true)
+    setCuratedError('')
+    try {
+      const res = await fetch('/api/job-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Live-Token': token,
+        },
+        body: JSON.stringify({ refresh: true }),
+      })
+      const data = await res.json() as { scraped?: number; stored?: number; scored?: number; errors?: string[] }
+      if (!res.ok) {
+        setCuratedError(`Refresh failed: ${JSON.stringify(data)}`)
+      } else {
+        await fetchCuratedLeads()
+      }
+    } catch {
+      setCuratedError('Refresh request failed')
+    } finally {
+      setCuratedRefreshing(false)
     }
   }
 
@@ -286,6 +352,245 @@ export default function JobsPage() {
             </div>
           </div>
         )}
+
+        {/* ── Curated Company Targets ────────────────────────────────── */}
+        <div style={{
+          borderBottom: '1px solid rgba(240,237,232,0.07)',
+          paddingBottom: '24px',
+          marginBottom: '32px',
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+          }}>
+            <div>
+              <div style={{
+                fontSize: '11px',
+                fontFamily: 'IBM Plex Mono, monospace',
+                color: '#C8843A',
+                letterSpacing: '0.1em',
+                marginBottom: '2px',
+              }}>
+                CURATED COMPANY TARGETS
+              </div>
+              <div style={{ fontSize: '12px', color: '#4A4846' }}>
+                {curatedLeads.length} lead{curatedLeads.length !== 1 ? 's' : ''} · {curatedLeads.filter(l => l.requires_manual_review).length} require manual review
+              </div>
+            </div>
+            <button
+              onClick={refreshCuratedLeads}
+              disabled={curatedRefreshing}
+              style={{
+                background: curatedRefreshing ? 'rgba(200,132,58,0.2)' : 'none',
+                border: '1px solid rgba(200,132,58,0.3)',
+                borderRadius: '6px',
+                color: '#C8843A',
+                fontSize: '12px',
+                padding: '6px 14px',
+                cursor: curatedRefreshing ? 'not-allowed' : 'pointer',
+                fontFamily: 'IBM Plex Mono, monospace',
+              }}
+            >
+              {curatedRefreshing ? 'Scraping…' : 'Refresh Curated Leads'}
+            </button>
+          </div>
+
+          {curatedError && (
+            <div style={{
+              fontSize: '12px',
+              color: '#ef4444',
+              fontFamily: 'IBM Plex Mono, monospace',
+              marginBottom: '12px',
+            }}>
+              {curatedError}
+            </div>
+          )}
+
+          {curatedLoading && (
+            <div style={{
+              color: '#4A4846',
+              fontSize: '12px',
+              fontFamily: 'IBM Plex Mono, monospace',
+            }}>
+              Loading curated leads…
+            </div>
+          )}
+
+          {!curatedLoading && curatedLeads.length === 0 && (
+            <div style={{
+              color: '#4A4846',
+              fontSize: '13px',
+            }}>
+              No curated leads yet. Click &ldquo;Refresh Curated Leads&rdquo; to run the first scrape.
+            </div>
+          )}
+
+          {curatedLeads.map(lead => (
+            <div key={lead.external_id} style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(240,237,232,0.08)',
+              borderRadius: '10px',
+              padding: '18px 22px',
+              marginBottom: '10px',
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '16px',
+                marginBottom: '8px',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    color: '#F0EDE8',
+                    marginBottom: '3px',
+                  }}>
+                    {lead.title}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#8A8784' }}>
+                    {lead.company}
+                    {lead.location ? ` · ${lead.location}` : ''}
+                  </div>
+                </div>
+                {lead.fit_score != null && (
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{
+                      fontSize: '22px',
+                      fontWeight: '600',
+                      color: lead.fit_score >= 85 ? '#4ade80' : lead.fit_score >= 65 ? '#C8843A' : '#8A8784',
+                      fontFamily: 'IBM Plex Mono, monospace',
+                      lineHeight: 1,
+                    }}>
+                      {lead.fit_score}
+                    </div>
+                    <div style={{
+                      fontSize: '9px',
+                      color: '#4A4846',
+                      fontFamily: 'IBM Plex Mono, monospace',
+                      marginTop: '2px',
+                    }}>
+                      FIT SCORE
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Badges */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {(lead.location?.toLowerCase().includes('remote') || lead.source === 'target-ashby' && !lead.location_unverified) && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'IBM Plex Mono, monospace',
+                    background: 'rgba(74,222,128,0.1)',
+                    border: '1px solid rgba(74,222,128,0.25)',
+                    color: '#4ade80',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    letterSpacing: '0.06em',
+                  }}>
+                    REMOTE
+                  </span>
+                )}
+                {lead.location_unverified && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'IBM Plex Mono, monospace',
+                    background: 'rgba(250,204,21,0.1)',
+                    border: '1px solid rgba(250,204,21,0.25)',
+                    color: '#facc15',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    letterSpacing: '0.06em',
+                  }}>
+                    VERIFY LOCATION
+                  </span>
+                )}
+                {lead.requires_manual_review && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'IBM Plex Mono, monospace',
+                    background: 'rgba(138,135,132,0.1)',
+                    border: '1px solid rgba(138,135,132,0.2)',
+                    color: '#8A8784',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    letterSpacing: '0.06em',
+                  }}>
+                    CHECK MANUALLY
+                  </span>
+                )}
+              </div>
+
+              {lead.fit_summary && !lead.requires_manual_review && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#8A8784',
+                  lineHeight: '1.5',
+                  marginBottom: '10px',
+                }}>
+                  {lead.fit_summary}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={lead.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: '#C8843A',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#0F0F0F',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    padding: '7px 14px',
+                    textDecoration: 'none',
+                    fontFamily: 'IBM Plex Mono, monospace',
+                  }}
+                >
+                  View posting ↗
+                </a>
+                {lead.description && !lead.requires_manual_review && (
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('career_prefill_job', lead.description ?? '')
+                      sessionStorage.setItem('career_prefill_title', `${lead.title} at ${lead.company}`)
+                      router.push('/')
+                    }}
+                    style={{
+                      background: 'none',
+                      border: '1px solid rgba(240,237,232,0.1)',
+                      borderRadius: '6px',
+                      color: '#8A8784',
+                      fontSize: '12px',
+                      padding: '7px 14px',
+                      cursor: 'pointer',
+                      fontFamily: 'IBM Plex Mono, monospace',
+                    }}
+                  >
+                    Analyze →
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── General job leads (all sources) ────────────────────────── */}
+        <div style={{
+          fontSize: '11px',
+          fontFamily: 'IBM Plex Mono, monospace',
+          color: '#4A4846',
+          letterSpacing: '0.08em',
+          marginBottom: '20px',
+        }}>
+          ALL LEADS · {newJobs.length} new
+        </div>
 
         {[...newJobs, ...appliedJobs, ...passedJobs].map(job => (
           <div key={job.id} style={cardStyle(job.status)}>
