@@ -288,6 +288,10 @@ export default function JobsPage() {
   const appliedJobs = jobs.filter(j => j.status === 'applied')
   const passedJobs = jobs.filter(j => j.status === 'passed')
 
+  const MIN_SCORE = 50
+  const visibleCuratedLeads = curatedLeads.filter(l => l.fit_score != null && l.fit_score >= MIN_SCORE)
+  const visibleJobs = [...newJobs, ...appliedJobs, ...passedJobs].filter(j => j.fit_score >= MIN_SCORE)
+
   return (
     <div style={pageStyle}>
       <div style={headerStyle}>
@@ -376,7 +380,7 @@ export default function JobsPage() {
                 CURATED COMPANY TARGETS
               </div>
               <div style={{ fontSize: '12px', color: '#4A4846' }}>
-                {curatedLeads.length} lead{curatedLeads.length !== 1 ? 's' : ''} · {curatedLeads.filter(l => l.requires_manual_review).length} require manual review
+                {visibleCuratedLeads.length} lead{visibleCuratedLeads.length !== 1 ? 's' : ''} scored ≥50 · {curatedLeads.filter(l => l.requires_manual_review).length} require manual review
               </div>
             </div>
             <button
@@ -427,7 +431,17 @@ export default function JobsPage() {
             </div>
           )}
 
-          {curatedLeads.map(lead => (
+          {!curatedLoading && curatedLeads.length > 0 && visibleCuratedLeads.length === 0 && (
+            <div style={{
+              color: '#4A4846',
+              fontSize: '13px',
+              fontFamily: 'IBM Plex Mono, monospace',
+            }}>
+              No leads above the score threshold yet. Check back after the next refresh.
+            </div>
+          )}
+
+          {visibleCuratedLeads.map(lead => (
             <div key={lead.external_id} style={{
               background: '#1A1A1A',
               border: '1px solid rgba(240,237,232,0.08)',
@@ -589,10 +603,21 @@ export default function JobsPage() {
           letterSpacing: '0.08em',
           marginBottom: '20px',
         }}>
-          ALL LEADS · {newJobs.length} new
+          ALL LEADS · {visibleJobs.filter(j => j.status === 'new').length} new · score ≥50
         </div>
 
-        {[...newJobs, ...appliedJobs, ...passedJobs].map(job => (
+        {visibleJobs.length === 0 && !loading && (
+          <div style={{
+            color: '#4A4846',
+            fontSize: '13px',
+            fontFamily: 'IBM Plex Mono, monospace',
+            padding: '24px 0',
+          }}>
+            No leads above the score threshold yet. Check back after the next refresh.
+          </div>
+        )}
+
+        {visibleJobs.map(job => (
           <div key={job.id} style={cardStyle(job.status)}>
             <div style={{
               display: 'flex',
