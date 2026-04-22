@@ -172,9 +172,10 @@ export async function GET(request: NextRequest) {
       date_found, status, source, description,
       location_unverified, requires_manual_review
     FROM job_leads
-    WHERE source = 'target-ashby'
-       OR source = 'target-greenhouse'
-       OR source = 'target-custom'
+    WHERE (source = 'target-ashby'
+        OR source = 'target-greenhouse'
+        OR source = 'target-custom')
+      AND fit_score >= 50
     ORDER BY
       fit_score DESC NULLS LAST,
       date_found DESC
