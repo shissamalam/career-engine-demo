@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      max_tokens: 16000,
       system: DNA_PROMPT,
       messages: [
         {
@@ -33,12 +33,14 @@ export async function POST(request: Request) {
 SCORING INSTRUCTIONS — apply these before generating any output:
 
 STEP 1 — LOCATION GATE:
-Is this role on-site or hybrid AND located outside the Austin, TX metro area AND
-does it not explicitly state remote work is available?
+Is this role on-site or hybrid AND located outside the Austin, TX metro area (outside
+the 35-mile commute radius from Georgetown, TX 78626) AND does it not explicitly state
+remote work is available?
 If YES to all three: set roleFit.score to 0 and roleFit.scoreLabel to
 "Excluded - relocation required" and roleFit.summary to "Role requires relocation
 outside Austin TX. Sam will not relocate. Hard filter applied." Still generate the
 full JSON structure but reflect the disqualification throughout.
+Austin-metro and hybrid roles are NOT excluded — they proceed to Step 2.
 
 STEP 2 — Score 0-100 using this rubric (only if role passed Step 1).
 Add up points across all 6 categories:
@@ -57,10 +59,13 @@ COMPANY STAGE & SIZE (20 pts max):
 0-5   = 200+ people, enterprise, or pre-product with no traction
 
 REMOTE / LOCATION (15 pts max):
-15    = Fully remote, no travel requirement
-10-14 = Remote-first with optional Austin travel
-5-9   = Hybrid Austin-based
-0-4   = Any relocation requirement or in-office mandate outside Austin
+15    = Fully remote, no office requirement
+12    = Austin-based or hybrid within 35 miles of Georgetown TX (78626) — Austin,
+        Round Rock, Cedar Park, Leander, Georgetown, Pflugerville, Hutto, Taylor,
+        Buda, Kyle, San Marcos. Role must be hybrid or flexible, not 5-day in-office.
+6     = Austin-area role with unclear or unstated remote/hybrid policy — flag for
+        manual review, do not score 0 for ambiguity
+0     = Requires relocation outside Austin metro, or mandates 5-day in-office
 
 COMPENSATION SIGNAL (15 pts max):
 13-15 = $180K+ base stated or strongly implied by stage and seniority
@@ -83,10 +88,61 @@ TEAM CALIBER SIGNALS (5 pts max):
 Sum all categories for the final score. A genuine fit scores 85-100. A mediocre
 fit scores 55-75. A poor fit scores below 45.
 
+ENVIRONMENT FIT INSTRUCTIONS — apply these when populating roleFit.strengths and roleFit.gaps:
+- Factor in environment fit alongside skills match
+- If the job description signals command-and-control leadership, advisory-only
+  authority, or large bureaucratic culture, note this explicitly in gaps with
+  severity "major"
+- If the company signals builder culture, early stage, genuine collaboration,
+  and execution authority, note this as a strength
+- Sam's burnout came from building systems for a leader who would not implement
+  them. A skills match without environment fit is not a strong match. Always
+  assess both.
+
+CRITICAL RESUME RULES — apply these when generating the resume object:
+- Maximum 2 pages when rendered as a Word document
+- Use exact dates: Partner 2020-2025, Project Architect 2014-2020, Project Manager
+  2011-2014, Project Designer 2010-2011 (only if fits)
+- Use exact contact: sjmanning@gmail.com, 360-261-1531, linkedin.com/in/sjmanningtx,
+  Austin TX
+- Include FMVA certification in education:
+  "M.Arch + B.S. Architecture, Washington State University | FMVA (CFI, April 2026)"
+- Include the 16x expansion ($80K to $1.3M+) and $75M+ numbers in Partner role bullets
+- Include the deal preservation story ($35M to $69M restructured to $40M, preserved
+  $1.6M) if space permits
+- If content does not fit 2 pages, cut Project Designer first, then abbreviate
+  Project Manager, never cut the numbers
+- Location is always Austin TX, never Georgetown TX
+- Do NOT include a separate "AI Systems Developer" or "Tano Architecture" experience
+  entry. All AI and systems-building work should be woven into bullets within the
+  Clayton Korte Partner role (2020-2025) where relevant.
+- Company name is always "Clayton Korte" for all experience entries. Never use
+  "Tano Architecture" or "Tano Studio".
+- Never use em dashes (—) anywhere in the resume or cover letter. Use commas,
+  colons, or rewrite the sentence instead.
+- Never mention BizBox in any output. If referencing self-built applications,
+  use TanoBox or tanobuild.com only.
+- Never include product names (TanoBox, BizBox, SATS, APEX, tanobuild.com) in the
+  skills array. Skills must be capabilities only, not product names.
+- Never reference SATS or the trading system by its name in resume bullets. Describe
+  it as "autonomous multi-agent AI system" or "13-container Docker AI stack" without
+  naming it.
+- Every experience entry MUST include an "intro" field: a single sentence (under 30
+  words) describing the overall scope of the role, placed before the bullets. For
+  the Partner 2020-2025 entry, describe the de facto CRO and operational architect
+  scope. For Project Architect and Project Manager, describe the project delivery scope.
+
+OUTPUT REQUIREMENTS:
+- Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes,
+  2-4 red flags
+- Be specific to Sam's actual background — no generic advice
+- Return only valid JSON. No markdown fences, no preamble, no explanation.
+
 JOB POSTING:
 ${jobPosting}
 
-Return a JSON object with EXACTLY this structure — match every field name and type precisely:
+Return a JSON object with EXACTLY this structure — match every field name and type
+precisely. No text before or after the JSON object.
 
 {
   "roleFit": {
@@ -107,17 +163,6 @@ Return a JSON object with EXACTLY this structure — match every field name and 
       }
     ]
   },
-
-When assessing role fit:
-- Factor in environment fit alongside skills match
-- If the job description signals command-and-control leadership,
-  advisory-only authority, or large bureaucratic culture, note
-  this explicitly in the gaps section with severity "major"
-- If the company signals builder culture, early stage, genuine
-  collaboration, and execution authority, note this as a strength
-- Sam's burnout came from building systems for a leader who
-  would not implement them. A skills match without environment
-  fit is not a strong match. Always assess both.
   "talkingPoints": [
     {
       "question": "<likely interview question>",
@@ -160,45 +205,47 @@ When assessing role fit:
     "body": "<second paragraph — two strongest matching credentials with specific evidence>",
     "close": "<third paragraph — forward-looking close, confident, no filler>"
   }
-}
-
-CRITICAL RESUME RULES:
-- Maximum 2 pages when rendered as a Word document
-- Use exact dates: Partner 2020-2025, Project Architect 2014-2020, Project Manager 2011-2014, Project Designer 2010-2011 (only if fits)
-- Use exact contact: sjmanning@gmail.com, 360-261-1531, linkedin.com/in/sjmanningtx, Austin TX
-- Include FMVA certification in education: "M.Arch + B.S. Architecture, Washington State University | FMVA (CFI, April 2026)"
-- Include the 16x expansion ($80K to $1.3M+) and $75M+ numbers in Partner role bullets
-- Include the deal preservation story ($35M to $69M restructured to $40M, preserved $1.6M) if space permits
-- If content does not fit 2 pages, cut Project Designer first, then abbreviate Project Manager, never cut the numbers
-- Location is always Austin TX, never Georgetown TX
-- Do NOT include a separate "AI Systems Developer" or "Tano Architecture" experience entry. All AI and systems-building work should be woven into bullets within the Clayton Korte Partner role (2020-2025) where relevant.
-- Company name is always "Clayton Korte" for all experience entries. Never use "Tano Architecture" or "Tano Studio".
-- Never use em dashes (—) anywhere in the resume or cover letter. Use commas, colons, or rewrite the sentence instead.
-- Never mention BizBox in any output. If referencing self-built applications, use TanoBox or tanobuild.com only.
-- Never include product names (TanoBox, BizBox, SATS, APEX, tanobuild.com) in the skills array. Skills must be capabilities only, not product names.
-- Never reference SATS or the trading system by its name in resume bullets. Describe it as "autonomous multi-agent AI system" or "13-container Docker AI stack" without naming it.
-- Every experience entry MUST include an "intro" field: a single sentence (under 30 words) describing the overall scope of the role, placed before the bullets. For the Partner 2020-2025 entry, describe the de facto CRO and operational architect scope. For Project Architect and Project Manager, describe the project delivery scope.
-
-Requirements:
-- Include 3-5 strengths, 1-3 gaps, 4-6 talking points, 3-5 negotiation notes, 2-4 red flags
-- Be specific to Sam's actual background — no generic advice
-- Return only valid JSON. No markdown fences, no preamble, no explanation.`,
+}`,
         },
       ],
     })
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      throw new Error('Unexpected response type')
+      throw new Error('Unexpected response type from Claude API')
     }
 
-    const cleaned = content.text
+    // Robust JSON extraction: strip any preamble/postamble and markdown fences,
+    // then find the outermost JSON object using brace matching.
+    // This handles cases where Claude adds explanation text before or after the JSON.
+    const rawText = content.text.trim()
+
+    let jsonString: string | null = null
+
+    // First pass: try stripping markdown fences if present
+    const fenceStripped = rawText
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
       .replace(/\s*```$/i, '')
       .trim()
 
-    const parsed = JSON.parse(cleaned)
+    // Second pass: find the outermost { ... } block to handle any preamble/postamble
+    const firstBrace = fenceStripped.indexOf('{')
+    const lastBrace = fenceStripped.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      jsonString = fenceStripped.slice(firstBrace, lastBrace + 1)
+    } else {
+      jsonString = fenceStripped
+    }
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonString)
+    } catch (parseError) {
+      console.error('generate-live JSON parse failed. Raw response length:', rawText.length)
+      console.error('generate-live JSON parse failed. First 500 chars:', rawText.slice(0, 500))
+      throw new Error(`JSON parse failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
+    }
 
     return Response.json({
       success: true,
@@ -206,9 +253,12 @@ Requirements:
       demo: false,
     })
   } catch (error) {
-    console.error('Live generation error:', error)
+    console.error('generate-live error:', error)
     return Response.json(
-      { error: 'Generation failed', detail: String(error) },
+      {
+        error: 'Generation failed',
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
