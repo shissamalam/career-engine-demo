@@ -32,6 +32,9 @@ const TARGET_COMPANIES: { slug: string; name: string; ats: 'ashby' | 'lever' | '
   { slug: 'apollo',    name: 'Apollo.io', ats: 'greenhouse' },
   { slug: 'gongio',    name: 'Gong',      ats: 'greenhouse' },
   { slug: 'salesloft', name: 'Salesloft', ats: 'greenhouse' },
+  { slug: 'salesmsg',  name: 'SalesMsg',  ats: 'greenhouse' },
+  { slug: 'mercury',   name: 'Mercury',   ats: 'greenhouse' },
+  { slug: 'monograph', name: 'Monograph', ats: 'greenhouse' },
 ]
 
 export const maxDuration = 300
@@ -51,13 +54,18 @@ type Results = {
 const SCORING_PROMPT = `You are scoring a job posting for Sam Manning.
 
 STEP 1 — LOCATION GATE (evaluate before anything else):
-Is this role on-site or hybrid AND located outside the Austin, TX metro area AND does it not explicitly state remote work is available?
-If YES to all three: output {"score": 0, "label": "Excluded - relocation required", "summary": "Role requires relocation outside Austin TX. Hard filter applied."} and stop immediately.
+Is this role on-site or hybrid AND located outside the Austin, TX metro area (outside the 35-mile commute radius from Georgetown, TX 78626) AND does it not explicitly state remote work is available?
+If YES to all three: output {"score": 0, "label": "Excluded - relocation required", "summary": "Role requires relocation outside Austin TX commute area. Hard filter applied."} and stop immediately.
+Austin-metro and hybrid roles are NOT excluded here — they proceed to Step 2.
 
 STEP 2 — Only if the role passed Step 1, score it 0–100 using this rubric:
 - Role type fit (30 pts max): GTM Ops/RevOps/BizOps/AI Implementation with build = 25-30. Ops-heavy with some build = 15-24. Mixed with sales = 5-14. AE/BD/SWE/pure PM = 0-4.
 - Company stage & size (20 pts max): Seed/Series A sub-50 people = 17-20. Series B 50-100 = 12-16. 100-200 people = 6-11. 200+ or enterprise = 0-5.
-- Remote/location (15 pts max): Fully remote = 15. Remote-first optional Austin travel = 10-14. Hybrid Austin = 5-9. Outside Austin no remote = 0.
+- Remote/location (15 pts max):
+    TIER 1 — 15 pts: Fully remote, no office requirement.
+    TIER 2 — 12 pts: Austin-based or hybrid within 35 miles of Georgetown TX (78626). Cities in range: Austin, Round Rock, Cedar Park, Leander, Georgetown, Pflugerville, Hutto, Taylor, Buda, Kyle, San Marcos. Role must be hybrid or flexible — not 5 days/week in office.
+    TIER 3 — 6 pts: Austin-area role with unclear or unstated remote/hybrid policy. Flag summary with "[Manual review: location policy unclear]". Do NOT score 0 for ambiguity — default to 6.
+    TIER 4 — 0 pts: Requires relocation outside the Austin metro, OR mandates 5-day in-office attendance regardless of location.
 - Compensation signal (15 pts max): $180K+ stated = 13-15. $150-180K = 9-12. $120-150K with equity = 4-8. Below $120K = 0-3.
 - Build ownership (10 pts max): Owns building from zero = 9-10. Significant build component = 6-8. Some tooling work = 3-5. Advisory/management only = 0-2.
 - Adoption authority (5 pts max): Authority over implementation = 5. Reasonable cross-functional influence = 3-4. Hands off to others = 1-2. No adoption ownership = 0.
@@ -304,20 +312,13 @@ async function fetchAshbyJobs(client: Anthropic, sql: any, results: Results) {
       if (!res.ok) continue
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await res.json() as { jobPostings?: any[] }
-      const jobs = data.jobPostings ?? []
+      const data = await res.json() as { jobs?: any[] }
+      const jobs = data.jobs ?? []
       results.fetched += jobs.length
       bumpSource(results, 'ashby', { fetched: jobs.length })
 
       for (const job of jobs) {
         if (!job.isRemote && job.workplaceType !== 'Remote') continue
-
-        const titleLower = (job.title ?? '').toLowerCase()
-        const isRelevant = [
-          'operations', 'revenue', 'gtm', 'go-to-market', 'bizops',
-          'chief of staff', 'strategy', 'implementation', 'ai',
-        ].some(kw => titleLower.includes(kw))
-        if (!isRelevant) continue
 
         const externalId = `ashby-${job.id}`
         const existing = await sql`SELECT id FROM job_leads WHERE external_id = ${externalId}`
@@ -404,13 +405,6 @@ async function fetchLeverJobs(client: Anthropic, sql: any, results: Results) {
           (job.categories?.location ?? '').toLowerCase().includes('remote')
         if (!isRemote) continue
 
-        const titleLower = (job.text ?? '').toLowerCase()
-        const isRelevant = [
-          'operations', 'revenue', 'gtm', 'go-to-market', 'bizops',
-          'chief of staff', 'strategy', 'implementation', 'ai',
-        ].some(kw => titleLower.includes(kw))
-        if (!isRelevant) continue
-
         const externalId = `lever-${job.id}`
         const existing = await sql`SELECT id FROM job_leads WHERE external_id = ${externalId}`
         if (existing.length > 0) continue
@@ -494,13 +488,6 @@ async function fetchGreenhouseJobs(client: Anthropic, sql: any, results: Results
         const locationStr = (job.location?.name ?? '').toLowerCase()
         const isRemote = locationStr.includes('remote') || locationStr.includes('anywhere')
         if (!isRemote) continue
-
-        const titleLower = (job.title ?? '').toLowerCase()
-        const isRelevant = [
-          'operations', 'revenue', 'gtm', 'go-to-market', 'bizops',
-          'chief of staff', 'strategy', 'implementation', 'ai',
-        ].some(kw => titleLower.includes(kw))
-        if (!isRelevant) continue
 
         const externalId = `greenhouse-${job.id}`
         const existing = await sql`SELECT id FROM job_leads WHERE external_id = ${externalId}`
