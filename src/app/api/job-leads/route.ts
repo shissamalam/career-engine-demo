@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       WHERE fit_score IS NULL
         AND title NOT LIKE 'Check%'
         AND title NOT LIKE 'Scrape%'
-      ORDER BY created_at DESC
+      ORDER BY date_found DESC
       LIMIT 10
     `
 
