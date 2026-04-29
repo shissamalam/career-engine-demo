@@ -108,17 +108,27 @@ async function runRefresh(isCron = false): Promise<Response> {
   let scored  = 0
   let stored  = 0
   let skipped = 0
+  let claudeCallsThisRun = 0
+  const MAX_CLAUDE_CALLS = 10
 
   for (const lead of leads) {
-    // Skip scoring placeholder entries
+    const existing = await sql`
+      SELECT id FROM job_leads WHERE external_id = ${lead.externalId}
+    `
+    if (existing.length > 0) {
+      skipped++
+      try { await upsertLead(sql, lead, null) } catch {}
+      continue
+    }
+
     const isPlaceholder = lead.title === 'Check careers page manually' ||
                           lead.title.startsWith('Check via') ||
                           lead.title.startsWith('Scrape failed')
 
     let scoreResult = null
-    if (!isPlaceholder && process.env.ANTHROPIC_API_KEY) {
+    if (!isPlaceholder && process.env.ANTHROPIC_API_KEY && claudeCallsThisRun < MAX_CLAUDE_CALLS) {
       scoreResult = await scoreJob(client, lead.title, lead.company, lead.location, lead.description)
-      if (scoreResult) scored++
+      if (scoreResult) { scored++; claudeCallsThisRun++ }
     } else {
       skipped++
     }
@@ -130,10 +140,7 @@ async function runRefresh(isCron = false): Promise<Response> {
       errors.push(`DB upsert failed for ${lead.externalId}: ${err instanceof Error ? err.message : String(err)}`)
     }
 
-    // Polite delay between Claude calls
-    if (!isPlaceholder && scoreResult) {
-      await new Promise(r => setTimeout(r, 500))
-    }
+    if (scoreResult) await new Promise(r => setTimeout(r, 300))
   }
 
   return Response.json({
@@ -191,6 +198,43 @@ export async function POST(request: NextRequest) {
   const token = request.headers.get('X-Live-Token')
   if (token !== process.env.LIVE_MODE_TOKEN) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(request.url)
+
+  if (url.searchParams.get('action') === 'score-pending') {
+    await initDb()
+    const sql = getDb()
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+    const unscored = await sql`
+      SELECT * FROM job_leads
+      WHERE fit_score IS NULL
+        AND title NOT LIKE 'Check%'
+        AND title NOT LIKE 'Scrape%'
+      ORDER BY created_at DESC
+      LIMIT 10
+    `
+
+    let scored = 0
+    for (const lead of unscored) {
+      const scoreResult = await scoreJob(
+        client, lead.title, lead.company, lead.location, lead.description ?? ''
+      )
+      if (scoreResult) {
+        await sql`
+          UPDATE job_leads
+          SET fit_score   = ${scoreResult.score},
+              fit_label   = ${scoreResult.label},
+              fit_summary = ${scoreResult.summary}
+          WHERE id = ${lead.id}
+        `
+        scored++
+      }
+      await new Promise(r => setTimeout(r, 300))
+    }
+
+    return Response.json({ success: true, scored, remaining: unscored.length - scored })
   }
 
   try {
