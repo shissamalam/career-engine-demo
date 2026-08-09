@@ -168,6 +168,10 @@ function ManualChecklist({ score }: { score: number | null }) {
   )
 }
 
+// Default digest window: the dashboard shows the last 7 days. Full history
+// stays queryable via /api/jobs without the days param.
+const DIGEST_WINDOW_DAYS = 7
+
 export default function JobsPage() {
   const [token, setToken] = useState('')
   const [tokenInput, setTokenInput] = useState('')
@@ -202,7 +206,7 @@ export default function JobsPage() {
   async function handleAuth() {
     setLoading(true)
     try {
-      const res = await fetch('/api/jobs', {
+      const res = await fetch(`/api/jobs?days=${DIGEST_WINDOW_DAYS}`, {
         headers: { 'X-Live-Token': tokenInput }
       })
       if (res.status === 401) {
@@ -227,7 +231,7 @@ export default function JobsPage() {
   async function fetchJobs() {
     setLoading(true)
     try {
-      const res = await fetch('/api/jobs', {
+      const res = await fetch(`/api/jobs?days=${DIGEST_WINDOW_DAYS}`, {
         headers: { 'X-Live-Token': token }
       })
       const data = await res.json()
@@ -795,7 +799,7 @@ export default function JobsPage() {
             border: '1px solid rgba(200,132,58,0.2)',
             borderRadius: '8px',
           }}>
-            {floodMeta.window_days ? `CATCH-UP DIGEST · LAST ${floodMeta.window_days} DAYS · ` : ''}
+            {floodMeta.window_days ? `LAST ${floodMeta.window_days} DAYS · ` : 'ALL TIME · '}
             FLOOD CONTROL ACTIVE · max {floodMeta.max_per_company}/company ·{' '}
             {floodMeta.suppressed} suppressed + {floodMeta.collapsed_duplicates} duplicates collapsed (kept in storage) ·{' '}
             regenerated {new Date(floodMeta.generated_at).toLocaleString()}
