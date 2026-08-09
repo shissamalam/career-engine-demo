@@ -4,6 +4,8 @@ import { getDb, initDb } from '@/lib/db'
 import { DNA_PROMPT } from '@/lib/dna'
 import { scrapeAllTargets, type JobLead } from '@/lib/jobLeadsScraper'
 import { isExcludedOpportunity, applyKeywordAdjustments, watchlistAndLaneBonus, laneForOpportunity } from '@/lib/targeting'
+import { buildDigest, maxPostingsPerCompany, type DigestRow } from '@/lib/digest'
+import { persistDigestFlags } from '@/lib/digestFlags'
 import { locationPrecheck, LOCATION_GATE_PROMPT_BLOCK } from '@/lib/locationGate'
 
 export const maxDuration = 300
@@ -192,7 +194,7 @@ export async function GET(request: NextRequest) {
   await initDb()
   const sql = getDb()
 
-  const leads = await sql`
+  const pool = await sql`
     SELECT
       id, external_id, title, company, location,
       url, fit_score, fit_label, fit_summary,
@@ -211,7 +213,22 @@ export async function GET(request: NextRequest) {
     LIMIT 200
   `
 
-  return Response.json({ leads })
+  // Flood control at the presentation layer: collapse near-duplicate reqs,
+  // then cap entries per company. Dropped rows stay in storage, flagged.
+  const digest = buildDigest(pool as unknown as DigestRow[])
+  await persistDigestFlags(sql, digest)
+
+  return Response.json({
+    leads: digest.entries,
+    suppression: digest.footers,
+    flood_control: {
+      max_per_company: maxPostingsPerCompany(),
+      pool_size: pool.length,
+      suppressed: digest.suppressedIds.length,
+      collapsed_duplicates: digest.collapsedIds.size,
+      generated_at: new Date().toISOString(),
+    },
+  })
 }
 
 // ── POST — manual refresh triggered from the UI ───────────────────────────────
