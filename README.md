@@ -17,6 +17,29 @@ AI-powered job application generator. Paste a job description, get a tailored re
 
 3. **Replace `dna.txt`** with your personal DNA prompt file. This file is used as the system prompt for all Anthropic API calls.
 
+## Digest flood control
+
+The `/jobs` digest (both the curated-targets list and the all-leads list) applies
+presentation-layer flood control. Ingestion and scoring store everything;
+suppressed rows are flagged in `job_leads` (`suppressed_flood`, `duplicate_of`),
+never deleted.
+
+Env vars (no code change needed):
+
+- `MAX_POSTINGS_PER_COMPANY` — max digest entries per normalized company,
+  chosen by fit score. Default: `2`.
+- `COMPANY_ALIASES` — JSON object mapping subsidiary/brand names onto one
+  company for the cap, merged over built-in defaults (Apple Retail / Apple
+  Computer / Apple Services → Apple are pre-seeded). Example:
+  `COMPANY_ALIASES='{"google llc":"google","deepmind":"google"}'`
+
+When a company is capped the digest shows a footer line, e.g.
+`Apple: 2 shown of 47 scored`, so a genuine hiring surge stays visible.
+Near-identical reqs (same role across locations, junk-suffixed title variants)
+are collapsed into the highest-scored instance before the cap, with the other
+locations listed on that entry. `GET /api/jobs?days=7` regenerates the digest
+over a recent window only.
+
 ## Run locally (development)
 
 ```bash

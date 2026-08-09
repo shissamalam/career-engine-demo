@@ -17,6 +17,8 @@ interface Job {
   status: string
   description: string
   lane: Lane | null
+  other_locations?: string[]
+  collapsed_count?: number
 }
 
 interface CuratedLead {
@@ -36,6 +38,67 @@ interface CuratedLead {
   location_unverified: boolean | null
   requires_manual_review: boolean | null
   lane: Lane | null
+  other_locations?: string[]
+  collapsed_count?: number
+}
+
+interface SuppressionFooter {
+  company: string
+  shown: number
+  scored: number
+}
+
+interface FloodControlMeta {
+  max_per_company: number
+  suppressed: number
+  collapsed_duplicates: number
+  window_days?: number | null
+  generated_at: string
+}
+
+// One line per flooding company — a genuine hiring surge stays visible
+// without reading every entry: "Apple: 2 shown of 47 scored".
+function SuppressionFooterLines({ footers }: { footers: SuppressionFooter[] }) {
+  if (footers.length === 0) return null
+  return (
+    <div style={{
+      marginTop: '12px',
+      padding: '10px 14px',
+      background: 'rgba(138,135,132,0.05)',
+      border: '1px solid rgba(138,135,132,0.15)',
+      borderRadius: '8px',
+    }}>
+      {footers.map(f => (
+        <div key={f.company} style={{
+          fontSize: '11px',
+          fontFamily: 'IBM Plex Mono, monospace',
+          color: '#8A8784',
+          letterSpacing: '0.04em',
+          lineHeight: '1.8',
+        }}>
+          {f.company}: {f.shown} shown of {f.scored} scored
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Merged-location line for a collapsed near-duplicate group.
+function AlsoPostedIn({ locations, count }: { locations?: string[]; count?: number }) {
+  if (!count) return null
+  const locText = locations && locations.length > 0
+    ? `also posted in ${locations.join(' · ')}`
+    : 'near-identical variants collapsed'
+  return (
+    <div style={{
+      fontSize: '11px',
+      fontFamily: 'IBM Plex Mono, monospace',
+      color: '#4A4846',
+      marginTop: '4px',
+    }}>
+      +{count} duplicate posting{count !== 1 ? 's' : ''} — {locText}
+    </div>
+  )
 }
 
 // Lane badge colors — active lanes are amber-family; the exploratory CJ vendor
@@ -105,6 +168,10 @@ function ManualChecklist({ score }: { score: number | null }) {
   )
 }
 
+// Default digest window: the dashboard shows the last 7 days. Full history
+// stays queryable via /api/jobs without the days param.
+const DIGEST_WINDOW_DAYS = 7
+
 export default function JobsPage() {
   const [token, setToken] = useState('')
   const [tokenInput, setTokenInput] = useState('')
@@ -116,6 +183,9 @@ export default function JobsPage() {
   const [curatedLoading, setCuratedLoading] = useState(false)
   const [curatedError, setCuratedError] = useState('')
   const [curatedRefreshing, setCuratedRefreshing] = useState(false)
+  const [jobsSuppression, setJobsSuppression] = useState<SuppressionFooter[]>([])
+  const [curatedSuppression, setCuratedSuppression] = useState<SuppressionFooter[]>([])
+  const [floodMeta, setFloodMeta] = useState<FloodControlMeta | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -136,7 +206,7 @@ export default function JobsPage() {
   async function handleAuth() {
     setLoading(true)
     try {
-      const res = await fetch('/api/jobs', {
+      const res = await fetch(`/api/jobs?days=${DIGEST_WINDOW_DAYS}`, {
         headers: { 'X-Live-Token': tokenInput }
       })
       if (res.status === 401) {
@@ -148,6 +218,8 @@ export default function JobsPage() {
       sessionStorage.setItem('career_live_token', tokenInput)
       setToken(tokenInput)
       setJobs(data.jobs || [])
+      setJobsSuppression(data.suppression || [])
+      setFloodMeta(data.flood_control || null)
       setAuthenticated(true)
     } catch {
       setError('Connection failed')
@@ -159,11 +231,13 @@ export default function JobsPage() {
   async function fetchJobs() {
     setLoading(true)
     try {
-      const res = await fetch('/api/jobs', {
+      const res = await fetch(`/api/jobs?days=${DIGEST_WINDOW_DAYS}`, {
         headers: { 'X-Live-Token': token }
       })
       const data = await res.json()
       setJobs(data.jobs || [])
+      setJobsSuppression(data.suppression || [])
+      setFloodMeta(data.flood_control || null)
     } catch {
       setError('Failed to load jobs')
     } finally {
@@ -178,8 +252,9 @@ export default function JobsPage() {
       const res = await fetch('/api/job-leads', {
         headers: { 'X-Live-Token': token }
       })
-      const data = await res.json() as { leads?: CuratedLead[] }
+      const data = await res.json() as { leads?: CuratedLead[]; suppression?: SuppressionFooter[] }
       setCuratedLeads(data.leads || [])
+      setCuratedSuppression(data.suppression || [])
     } catch {
       setCuratedError('Failed to load curated leads')
     } finally {
@@ -395,6 +470,7 @@ export default function JobsPage() {
                 {lead.company}
                 {lead.location ? ` · ${lead.location}` : ''}
               </div>
+              <AlsoPostedIn locations={lead.other_locations} count={lead.collapsed_count} />
             </div>
             {lead.fit_score != null && (
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -550,6 +626,7 @@ export default function JobsPage() {
                 ? ` · ${job.salary_display}`
                 : ' · Salary not listed'}
             </div>
+            <AlsoPostedIn locations={job.other_locations} count={job.collapsed_count} />
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
               <LaneBadge lane={job.lane} />
             </div>
@@ -710,6 +787,24 @@ export default function JobsPage() {
       </div>
 
       <div style={containerStyle}>
+        {floodMeta && (jobsSuppression.length > 0 || curatedSuppression.length > 0) && (
+          <div style={{
+            fontSize: '11px',
+            fontFamily: 'IBM Plex Mono, monospace',
+            color: '#8A8784',
+            letterSpacing: '0.05em',
+            padding: '8px 14px',
+            marginBottom: '20px',
+            background: 'rgba(200,132,58,0.06)',
+            border: '1px solid rgba(200,132,58,0.2)',
+            borderRadius: '8px',
+          }}>
+            {floodMeta.window_days ? `LAST ${floodMeta.window_days} DAYS · ` : 'ALL TIME · '}
+            FLOOD CONTROL ACTIVE · max {floodMeta.max_per_company}/company ·{' '}
+            {floodMeta.suppressed} suppressed + {floodMeta.collapsed_duplicates} duplicates collapsed (kept in storage) ·{' '}
+            regenerated {new Date(floodMeta.generated_at).toLocaleString()}
+          </div>
+        )}
         {loading && (
           <div style={{
             textAlign: 'center',
@@ -826,6 +921,7 @@ export default function JobsPage() {
           )}
 
           {visibleCuratedLeads.map(renderCuratedLead)}
+          <SuppressionFooterLines footers={curatedSuppression} />
         </div>
 
         {/* ── CJ Vendor lane (exploratory — separate from primary lanes) ── */}
@@ -876,6 +972,7 @@ export default function JobsPage() {
         )}
 
         {visibleJobs.map(job => renderGeneralJob(job))}
+        <SuppressionFooterLines footers={jobsSuppression} />
       </div>
     </div>
   )

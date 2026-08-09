@@ -42,6 +42,16 @@ export async function initDb() {
     ALTER TABLE job_leads
     ADD COLUMN IF NOT EXISTS lane TEXT
   `
+  // Digest flood control (presentation layer): capped rows are flagged, never
+  // deleted; collapsed near-duplicates point at the surviving instance.
+  await sql`
+    ALTER TABLE job_leads
+    ADD COLUMN IF NOT EXISTS suppressed_flood BOOLEAN DEFAULT FALSE
+  `
+  await sql`
+    ALTER TABLE job_leads
+    ADD COLUMN IF NOT EXISTS duplicate_of INTEGER
+  `
   await sql`
     CREATE TABLE IF NOT EXISTS ats_companies (
       id SERIAL PRIMARY KEY,
