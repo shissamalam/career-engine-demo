@@ -130,6 +130,12 @@ export function normalizeTitle(title: string): string {
 
 const MIN_PREFIX_STEM = 12
 
+// Comparison form: normalized title with spaces removed, so glued-word scraper
+// variants ("Trade ServiceProduct…" vs "Trade Service Product…") still match.
+function compactTitle(title: string): string {
+  return normalizeTitle(title).replace(/ /g, '')
+}
+
 function scoreOf(r: DigestRow): number {
   return typeof r.fit_score === 'number' ? r.fit_score : -1
 }
@@ -152,11 +158,11 @@ export function collapseNearDuplicates<T extends DigestRow>(
     // Shortest normalized title first, so the clean stem becomes the group
     // representative and junk-suffixed variants attach to it.
     const sorted = [...list].sort(
-      (a, b) => normalizeTitle(a.title).length - normalizeTitle(b.title).length,
+      (a, b) => compactTitle(a.title).length - compactTitle(b.title).length,
     )
     const groups: { stem: string; members: T[] }[] = []
     for (const row of sorted) {
-      const norm = normalizeTitle(row.title)
+      const norm = compactTitle(row.title)
       const group = groups.find(
         g => norm === g.stem || (g.stem.length >= MIN_PREFIX_STEM && norm.startsWith(g.stem)),
       )
